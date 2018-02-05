@@ -1,0 +1,6 @@
+.DS_Store
+*.o
+*.swp
+._*
+AtlasRat/*
+RAT_DATA_F98/*
