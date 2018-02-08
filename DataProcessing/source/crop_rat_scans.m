@@ -15,7 +15,7 @@ addpath('../lib/vi');
 addpath('../lib/Matlab2C/matrixMatlab2Cpp/matlab/')
 addpath('../lib/')
 
-rID = 30 %42 38 36 34 30 29
+rID = 29 %42 38 36 34 30 29
 day_list = [9,11,14,16];
 bAnatomy = 1;
 bRATS=1;
