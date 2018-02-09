@@ -1,5 +1,5 @@
 //
-//  Glioma_ReactionDiffusionNecrosis_Operator.h
+//  Glioma_ReactionDiffusionHypoxiaNecrosis_Operator.h
 //  GliomaBrutusXcode
 //
 //  Created by Lipkova on 15/03/16.
@@ -12,21 +12,21 @@
 
 
 template<int nDim = 3>
-struct Glioma_ReactionDiffusionNecrosis_Operator
+struct Glioma_ReactionDiffusionHypoxiaNecrosis_Operator
 {
     int stencil_start[3];
     int stencil_end[3];
     
     const Real Dw, Dg, rho, gamma;
     
-    Glioma_ReactionDiffusionNecrosis_Operator(const Real Dw_, const Real Dg_, const Real rho_, const Real gamma_): Dw(Dw_), Dg(Dg_), rho(rho_),gamma(gamma_)    {
+    Glioma_ReactionDiffusionHypoxiaNecrosis_Operator(const Real Dw_, const Real Dg_, const Real rho_, const Real gamma_): Dw(Dw_), Dg(Dg_), rho(rho_),gamma(gamma_)    {
         stencil_start[0] = stencil_start[1]= -1;
         stencil_end[0]   = stencil_end[1]  = +2;
         stencil_start[2] = nDim==3 ? -1: 0;
         stencil_end[2]   = nDim==3 ? +2:+1;
     }
     
-    Glioma_ReactionDiffusionNecrosis_Operator(const Glioma_ReactionDiffusionNecrosis_Operator& copy): Dw(copy.Dw), Dg(copy.Dg), rho(copy.rho), gamma(copy.gamma)
+    Glioma_ReactionDiffusionHypoxiaNecrosis_Operator(const Glioma_ReactionDiffusionNecrosis_Operator& copy): Dw(copy.Dw), Dg(copy.Dg), rho(copy.rho), gamma(copy.gamma)
     {
         stencil_start[0] = stencil_start[1]= -1;
         stencil_end[0]   = stencil_end[1]  = +2;

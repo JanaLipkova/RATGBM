@@ -13,11 +13,10 @@
 #include "Glioma.h"
 #include "Matrix.h"
 #include "Glioma_ReactionDiffusionOperator.h"
+#include "Glioma_ReactionDiffusionNecrosisOperator.h"
 #include "Glioma_MALA_SlopesOperator.h"
-#include "Glioma_ReactionDiffusionNecrosis_Operator.h"
 #include "Glioma_BMD_ReactionDiffusion_Operator.h"
 #include "Glioma_PropagationStatisticsOperator.h"
-#include "Turing_ReactionDiffusionOperator.h"
 
 struct CCell_extended
 {
@@ -226,15 +225,15 @@ struct CCell_extended
   
 #ifdef HGG
             case 0: return phi;
-            case 1: return phi + 0.1 * p_g + 0.2 * p_w + 2. * 0.3 * p_csf;
-            case 2: return phi + 0.1 * p_g + 0.2 * p_w;
-            case 3: return 0.1 * p_g + 0.2 * p_w;
-            case 4: return t1bc;
-            case 5: return t2bc;
-            case 6: return p_g;
+            case 1: return phi + 0.1 * p_g + 0.2 * p_w;
+            case 2: return necro;
+            case 3: return max(phi - necro, (Real)0.);
+            case 4: return 0.1 * p_g + 0.2 * p_w;
+            case 5: return t1bc;
+            case 6: return t2bc;
             case 7: return p_w;
-            case 8: return p_csf;
-            case 9: return omega;
+            case 8: return p_g;
+            case 9: return p_csf;
 #endif
         
                 

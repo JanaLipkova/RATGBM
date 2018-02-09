@@ -128,20 +128,13 @@ VPATH := ../Glioma/ ../MRAGcore/
 OBJECTS = \
 Glioma_main.o \
 Glioma_HG_UQ.o\
-Glioma_HG_Recurrance.o\
-Glioma_HG_UQ_MALA.o\
-Glioma_Bone_UQ.o\
-Glioma_Bone_BMD_UQ.o\
 Glioma_Necrosis.o\
 Glioma_ProcessSyntheticData.o\
 Glioma_HG_ProcessPatientData.o\
-Glioma_Bone_ProcessSyntheticData.o\
-Glioma_Bone_ProcessPatientData.o\
 Glioma_HG_Propagation.o\
 Glioma_HG_AddUniformMargin.o\
 Glioma_HG_Visualizations.o\
 Glioma_dat2VP.o\
-Glioma_TuringPatterns.o\
 MRAGBoundaryBlockInfo.o \
 MRAGProfiler.o \
 MRAGWavelets_StaticData.o \
