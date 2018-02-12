@@ -13,9 +13,7 @@
 #include "Glioma.h"
 #include "Matrix.h"
 #include "Glioma_ReactionDiffusionOperator.h"
-#include "Glioma_ReactionDiffusionNecrosisOperator.h"
-#include "Glioma_MALA_SlopesOperator.h"
-#include "Glioma_BMD_ReactionDiffusion_Operator.h"
+#include "Glioma_ReactionDiffusionNecorsisOperator.h"
 #include "Glioma_PropagationStatisticsOperator.h"
 
 struct CCell_extended

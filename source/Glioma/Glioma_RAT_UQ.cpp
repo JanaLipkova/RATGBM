@@ -34,12 +34,12 @@ Glioma_RAT_UQ::Glioma_RAT_UQ(int argc, const char ** argv): parser(argc, argv)
     ICtype = parser("-ICtype").asInt();
     pID =  parser("-pID").asInt();
     
-    switch (ModelType)
+    switch (ICtype)
     {
-        case 0;
+        case 0:
             _ic_rat_point_tumor(*grid, pID);
             
-        case 1;
+        case 1:
             _ic_rat_tumour(*grid, pID);
     }
     
@@ -65,7 +65,7 @@ Glioma_RAT_UQ::~Glioma_RAT_UQ()
    1) read in anatomies - rescaled to [0,1]^3
    2) read in tumor center of mass + initialize tumor around
    3) set length of brain */
-void Glioma_HG_UQ::_ic_rat_point_tumor(Grid<W,B>& grid, int pID)
+void Glioma_RAT_UQ::_ic_rat_point_tumor(Grid<W,B>& grid, int pID)
 {
     char dataFolder   [200];
     char patientFolder[200];
@@ -215,7 +215,7 @@ void Glioma_RAT_UQ::_readInTumorPosition(vector<Real>& tumorIC )
  1) read in anatomies - rescaled to [0,1]^3
  2) read in tumor center of mass + initialize tumor around
  3) set length of brain */
-void Glioma_HG_UQ::_ic_rat_tumour(Grid<W,B>& grid, int pID, double scale)
+void Glioma_RAT_UQ::_ic_rat_tumour(Grid<W,B>& grid, int pID)
 {
     char dataFolder   [200];
     char patientFolder[200];
@@ -312,14 +312,14 @@ void Glioma_HG_UQ::_ic_rat_tumour(Grid<W,B>& grid, int pID, double scale)
     }
 }
 
-void Glioma_RAT_UQ::_rescale_init_tumour(scale)
+void Glioma_RAT_UQ::_rescale_init_tumour(double scale)
 {
-    vector<BlockInfo> vInfo = grid.getBlocksInfo();
+    vector<BlockInfo> vInfo = grid->getBlocksInfo();
     
     for(int i=0; i<vInfo.size(); i++)
     {
         BlockInfo& info = vInfo[i];
-        B& block = grid.getBlockCollection()[info.blockID];
+        B& block = grid->getBlockCollection()[info.blockID];
         
         for(int iz=0; iz<B::sizeZ; iz++)
             for(int iy=0; iy<B::sizeY; iy++)
@@ -340,12 +340,12 @@ void Glioma_RAT_UQ::_reactionDiffusionStep(BoundaryInfo* boundaryInfo, const int
     Glioma_ReactionDiffusionOperator<_DIM>  rhs(Dw,Dg,rho);
     UpdateTumor                     <_DIM>  updateTumor(dt);
     
-    blockProcessing.pipeline_process(vInfo, collecton, *boundaryInfo, rhs);
+   blockProcessing.pipeline_process(vInfo, collecton, *boundaryInfo, rhs);
     BlockProcessing::process(vInfo, collecton, updateTumor, nParallelGranularity);
 }
     
     
-void Glioma_RAT_UQ::reactionDiffusionNecrosisStep(BoundaryInfo* boundaryInfo, const int nParallelGranularity, const Real Dw, const Real Dg, const Real rho, const double dt, const Real gamma);
+void Glioma_RAT_UQ::_reactionDiffusionNecrosisStep(BoundaryInfo* boundaryInfo, const int nParallelGranularity, const Real Dw, const Real Dg, const Real rho, const double dt, const Real gamma)
 {
     
     vector<BlockInfo> vInfo				= grid->getBlocksInfo();
@@ -453,7 +453,7 @@ void Glioma_RAT_UQ::_dumpUQoutput(Grid<W,B>& grid)
 }
 
 
-void Glioma_HG_UQ::run()
+void Glioma_RAT_UQ::run()
 {
     
     bool bProfiler = 0;
@@ -485,14 +485,14 @@ void Glioma_HG_UQ::run()
     if(bVerbose)  printf("Dg=%e, Dw=%e, dt= %f, rho=%f , h=%f\n", Dg, Dw, dt, rho,h);
     
     
-    if(bRescale)
+    if(parser("-bRescale").asBool())
        _rescale_init_tumour(scale);
     
-    _dump(iCounter)
+    _dump(iCounter);
     iCounter++;
     
     // decide model type
-    ModelType = parser("-ModelType").aInt();
+    ModelType = parser("-ModelType").asInt();
     if(bVerbose)  printf("using model type %d", ModelType);
     
     while (t <= tend)

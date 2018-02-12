@@ -26,7 +26,7 @@
 //#include "Glioma_Necrosis.h"
 
 // Radiotherpy
-#include "Glioma_HG_AddUniformMargin.h"
+//#include "Glioma_HG_AddUniformMargin.h"
 
 // VP Visualization
 #include "Glioma_dat2VP.h"
@@ -81,8 +81,8 @@ int main(int argc,const char ** argv)
 //          s = new Glioma_Bone_ProcessPatientData(argc, (const char **)argv);
 //      else if(parser("-anatomy").asString() == "necrosis")
 //          s = new Glioma_Necrosis(argc, (const char **)argv);
-      else if(parser("-anatomy").asString() == "addMargin")
-          s = new Glioma_HG_AddUniformMargin(argc, (const char **)argv);
+//      else if(parser("-anatomy").asString() == "addMargin")
+//          s = new Glioma_HG_AddUniformMargin(argc, (const char **)argv);
       else if(parser("-anatomy").asString() == "VPvisualisation")
           s = new Glioma_dat2VP(argc, (const char **)argv);
       else if(parser("-anatomy").asString() == "rat")

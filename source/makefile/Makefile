@@ -2,22 +2,12 @@ SHELL := /bin/bash
 
 hn ?= $(shell hostname)
 
-ifneq "$(findstring brutus,$(shell hostname))" ""
-CPPFLAGS += -D BRUTUS
-include make.brutus
-endif
-
 ifneq "$(findstring kraken,$(shell hostname))" ""
 CPPFLAGS += -D KRAKEN
 include make.kraken
 endif
 
 ifneq "$(findstring mpp,$(shell hostname))" ""
-CPPFLAGS += -D LRZ_CLUSTER
-include make.lrz
-endif
-
-ifneq "$(findstring lxa,$(shell hostname))" ""
 CPPFLAGS += -D LRZ_CLUSTER
 include make.lrz
 endif
@@ -34,23 +24,16 @@ endif
 #set parameters
 dim ?= 3 
 bpd ?= 8
-bs ?= 16 #16
-#bpd = 8 for lower resolution 
+bs ?= 20 
+#bpd = 8 for lower resolution, bs=16 
 CPPFLAGS += -D_DIM=$(dim) -D_BLOCKSIZE_=$(bs) -D_BPD_=$(bpd) 
-#CPPFLAGS += -D Bone -D Template23 -D Age_40 #Healthy #-D Age_70 #16
-#CPPFLAGS += -D Bone -D Patient1 -D V1 -D bmd3 
+CPPFLAGS += -D HGG
 
-#CPPFLAGS += -D Patient22
-#CPPFLAGS += -D HGG
-#CPPFLAGS += -D BRAIN_MASK
-#CPPFLAGS += -D RT_margin
 #CPPFLAGS += -D Propagation
-#CPPFLAGS += -D Synthetic
 #CPPFLAGS += -D HGG_UQ_MALA
 #CPPFLAGS += -D Visualisation
 #CPPFLAGS += -D Necrosis
 #CPPFLAGS += -D VP
-CPPFLAGS += -D Turing
 
 
 ifeq "$(dim)" "2"
@@ -128,13 +111,12 @@ VPATH := ../Glioma/ ../MRAGcore/
 OBJECTS = \
 Glioma_main.o \
 Glioma_HG_UQ.o\
-Glioma_Necrosis.o\
 Glioma_ProcessSyntheticData.o\
 Glioma_HG_ProcessPatientData.o\
 Glioma_HG_Propagation.o\
-Glioma_HG_AddUniformMargin.o\
 Glioma_HG_Visualizations.o\
 Glioma_dat2VP.o\
+Glioma_RAT_UQ.o\
 MRAGBoundaryBlockInfo.o \
 MRAGProfiler.o \
 MRAGWavelets_StaticData.o \

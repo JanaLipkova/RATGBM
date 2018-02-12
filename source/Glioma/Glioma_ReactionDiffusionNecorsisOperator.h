@@ -6,8 +6,6 @@
 //  Copyright (c) 2015 Lipkova. All rights reserved.
 //
 
-#ifndef GliomaXcode_Glioma_ReactionDiffusionOperator_h
-#define GliomaXcode_Glioma_ReactionDiffusionOperator_h
 
 template<int nDim = 3>
 struct Glioma_ReactionDiffusionNecrosisOperator
@@ -17,7 +15,7 @@ struct Glioma_ReactionDiffusionNecrosisOperator
     
     const Real Dw, Dg, rho, gamma;
     
-    Glioma_ReactionDiffusionNecrosisOperator(const Real Dw_, const Real Dg_, const Real rho_, const Real gammma_): Dw(Dw_), Dg(Dg_), rho(rho_), gamma(gamma_)
+    Glioma_ReactionDiffusionNecrosisOperator(const Real Dw_, const Real Dg_, const Real rho_, const Real gamma_): Dw(Dw_), Dg(Dg_), rho(rho_), gamma(gamma_)
     {
         stencil_start[0] = stencil_start[1]= -1;
         stencil_end[0]   = stencil_end[1]  = +2;
@@ -25,7 +23,7 @@ struct Glioma_ReactionDiffusionNecrosisOperator
         stencil_end[2]   = nDim==3 ? +2:+1;
     }
     
-    Glioma_ReactionDiffusionNecrosisOperator(const Glioma_ReactionDiffusionOperator& copy): Dw(copy.Dw), Dg(copy.Dg), rho(copy.rho), gamma(copy.gamma)
+    Glioma_ReactionDiffusionNecrosisOperator(const Glioma_ReactionDiffusionNecrosisOperator& copy): Dw(copy.Dw), Dg(copy.Dg), rho(copy.rho), gamma(copy.gamma)
     {
         stencil_start[0] = stencil_start[1]= -1;
         stencil_end[0]   = stencil_end[1]  = +2;
@@ -69,7 +67,7 @@ struct Glioma_ReactionDiffusionNecrosisOperator
                         
                         // necrosis
                         double tmp = 30. * (latent_thr - lab(ix,iy).phi);
-                        gamma_rate = max( double)0.0, gamma * 0.5 * (1. - tanh(tmp)) );
+                        gamma_rate = max( 0.0, gamma * 0.5 * (1. - tanh(tmp)) );
                         
                     }
                     
@@ -89,10 +87,10 @@ struct Glioma_ReactionDiffusionNecrosisOperator
                     
                     double diffusionFluxOut = -( (df[0] + df[1] + df[2] + df[3]) * lab(ix, iy).phi * ih2 );
                     double reactionFlux		= rho * lab(ix,iy).phi * ( 1. - lab(ix,iy).phi - lab(ix,iy).necro );
-                    double necroticFlux     = gamma_rate * lab(ix,iy).phi * ( 1. - lab(ix,iy).phi - lab(ix,iy).necro )
+                    double necroticFlux     = gamma_rate * lab(ix,iy).phi * ( 1. - lab(ix,iy).phi - lab(ix,iy).necro );
                     
                     o(ix, iy).dphidt  =   diffusionFluxOut + diffusionFluxIn + reactionFlux - necroticFlux;
-                    o(ix,iy).dnecrodt =   necroticFlux;
+                    o(ix, iy).dnecrodt =   necroticFlux;
 
                     
                 }
@@ -126,7 +124,7 @@ struct Glioma_ReactionDiffusionNecrosisOperator
 
                             // necrosis
                             double tmp = 30. * (latent_thr - lab(ix,iy,iz).phi);
-                            gamma_rate = max( double)0.0, gamma * 0.5 * (1. - tanh(tmp)) );
+                            gamma_rate = max( 0.0, gamma * 0.5 * (1. - tanh(tmp)) );
                         }
                         
                         // Neumann no flux boundary condition, 2nd order using ghosts
@@ -172,7 +170,7 @@ struct UpdateTumorNecoris
     UpdateTumorNecoris(double dt_):dt(dt_)
     { }
     
-    UpdateTumorNecoris(const UpdateTumor& copy):dt(copy.dt)
+    UpdateTumorNecoris(const UpdateTumorNecoris& copy):dt(copy.dt)
     { }
     
     template<typename BlockType>
@@ -217,6 +215,5 @@ struct UpdateTumorNecoris
 
 
 
-#endif
 
 
