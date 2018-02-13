@@ -34,22 +34,31 @@ Glioma_RAT_UQ::Glioma_RAT_UQ(int argc, const char ** argv): parser(argc, argv)
     ICtype = parser("-ICtype").asInt();
     pID =  parser("-pID").asInt();
     
-    switch (ModelType)
+    switch (ICtype)
     {
-        case 0;
+        case 0:
             _ic_rat_point_tumor(*grid, pID);
+            break;
+        
             
-        case 1;
+        case 1:
             _ic_rat_tumour(*grid, pID);
+            break;
+            
+        default:
+            cout<<"This type of IC is not supported, see Glioma_RAT_UQ.cpp for supported types"<<endl;
+            break;
     }
     
     
-    if(parser("-bDumpIC").asBool())
+    if(parser("-bDumpIC").asBool(1))
     _dump(0);
     
     isDone              = false;
     whenToWriteOffset	= parser("-dumpfreq").asDouble();
-    whenToWrite			= whenToWriteOffset;
+    whenToWrite			= parser("-dumpstart").asDouble();;
+
+//    whenToWrite			= whenToWriteOffset;
     numberOfIterations	= 0;
     
 }
@@ -65,12 +74,11 @@ Glioma_RAT_UQ::~Glioma_RAT_UQ()
    1) read in anatomies - rescaled to [0,1]^3
    2) read in tumor center of mass + initialize tumor around
    3) set length of brain */
-void Glioma_HG_UQ::_ic_rat_point_tumor(Grid<W,B>& grid, int pID)
+void Glioma_RAT_UQ::_ic_rat_point_tumor(Grid<W,B>& grid, int pID)
 {
     char dataFolder   [200];
     char patientFolder[200];
     char anatomy      [200];
-
     
 #ifdef LRZ_CLUSTER
     sprintf(dataFolder,"/home/hpc/txh01/di49zin/GliomaAdvance/RATGBM/source/Anatomy/F98/");
@@ -79,11 +87,11 @@ void Glioma_HG_UQ::_ic_rat_point_tumor(Grid<W,B>& grid, int pID)
 #endif
     
     if(pID == 0) // Atlas
-        sprintf(patientFolder, "%RAT_ATLAS/atlas",dataFolder);
+        sprintf(patientFolder, "%sRAT_ATLAS/atlas",dataFolder);
     else  // Rats
-        sprintf(patientFolder, "%M%02d/M%02d",dataFolder,pID,pID);
+        sprintf(patientFolder, "%sM%02d/M%02d",dataFolder,pID,pID);
     
-    printf("Reading anatomy from: %s", patientFolder);
+    printf("Reading anatomy from: %s \n", patientFolder);
     
     sprintf(anatomy, "%s_gm.dat", patientFolder);
     MatrixD3D GM(anatomy);
@@ -97,9 +105,10 @@ void Glioma_HG_UQ::_ic_rat_point_tumor(Grid<W,B>& grid, int pID)
     int brainSizeZ = (int) GM.getSizeZ();
     
     int brainSizeMax = max(brainSizeX, max(brainSizeY,brainSizeZ));
-    L    = brainSizeMax * 0.1;   // voxel spacing 117 µm, convert to mm -> L ~ 14 mm
+    L    = brainSizeMax * 0.117;   // voxel spacing 117 µm, convert to mm -> L ~ 14 mm
     
     std::cout<<"brainSizeX="<<brainSizeX<<" brainSizeY="<<brainSizeY<<" brainSizeZ="<<brainSizeZ<<std::endl;
+    std::cout<<"L="<<L<<std::endl;
     
     double brainHx = 1.0 / ((double)(brainSizeMax)); // should be w.r.t. longest dimension for correct aspect ratio
     double brainHy = 1.0 / ((double)(brainSizeMax)); // should be w.r.t. longest dimension for correct aspect ratio
@@ -109,8 +118,10 @@ void Glioma_HG_UQ::_ic_rat_point_tumor(Grid<W,B>& grid, int pID)
     vector<Real> tumor_ic(_DIM);
     _readInTumorPosition(tumor_ic);
     
-    const Real tumorRadius = 0.005;
-    const Real smooth_sup  = 2.;		// suppor of smoothening, over how many gp to smooth
+    // Tumour initial injection for F98: 3µL = 3 mm^3 --> volume corresponding to sphere with radius r=0.8947 mm
+    
+    const Real tumorRadius = 0.01;//0.8947/L ; // map to [0,1]^3 space
+    const Real smooth_sup  = 2;		// 2.suppor of smoothening, over how many gp to smooth
     
     vector<BlockInfo> vInfo = grid.getBlocksInfo();
     
@@ -133,7 +144,7 @@ void Glioma_HG_UQ::_ic_rat_point_tumor(Grid<W,B>& grid, int pID)
                     int mappedBrainX = (int)floor( x[0] / brainHx  );
                     int mappedBrainY = (int)floor( x[1] / brainHy  );
                     int mappedBrainZ = (int)floor( x[2] / brainHz  );
-                
+                    
                     
                     Real PGt, PWt, Pcsf;
                     
@@ -149,12 +160,18 @@ void Glioma_HG_UQ::_ic_rat_point_tumor(Grid<W,B>& grid, int pID)
                         Pcsf =  CSF(mappedBrainX,mappedBrainY,mappedBrainZ);
                     }
                     
-                    Pcsf = ( Pcsf > 0.1 ) ? 1. : Pcsf;  // threasholding to ensure hemisphere separations
-
-                    if(Pcsf  < 1.)
+                    double all = PGt + PWt + Pcsf;
+                    
+                    if(all>  0)
                     {
-                        block(ix,iy,iz).p_w    = PWt  / (PWt + PGt);
-                        block(ix,iy,iz).p_g    = PGt  / (PWt + PGt);
+                        Pcsf = ( Pcsf > 0.1 ) ? 1. : Pcsf;  // threasholding to ensure hemisphere separations
+                        block(ix,iy,iz).p_csf = Pcsf;
+                        
+                        if(Pcsf  < 1.)
+                        {
+                            block(ix,iy,iz).p_w    = PWt  / (PWt + PGt);
+                            block(ix,iy,iz).p_g    = PGt  / (PWt + PGt);
+                        }
                     }
                     
                     /* tumor */
@@ -169,6 +186,7 @@ void Glioma_HG_UQ::_ic_rat_point_tumor(Grid<W,B>& grid, int pID)
                     else
                         block(ix,iy,iz).phi = 0.0;
                     
+                    block(ix,iy,iz).phi = min(1.0, 4.*block(ix,iy,iz).phi ); //to ensure that max concentraiton is 1, for correct front propagation speed
                     block(ix,iy,iz).necro = 0.0;
                     
                 }
@@ -215,7 +233,7 @@ void Glioma_RAT_UQ::_readInTumorPosition(vector<Real>& tumorIC )
  1) read in anatomies - rescaled to [0,1]^3
  2) read in tumor center of mass + initialize tumor around
  3) set length of brain */
-void Glioma_HG_UQ::_ic_rat_tumour(Grid<W,B>& grid, int pID, double scale)
+void Glioma_RAT_UQ::_ic_rat_tumour(Grid<W,B>& grid, int pID)
 {
     char dataFolder   [200];
     char patientFolder[200];
@@ -228,10 +246,12 @@ void Glioma_HG_UQ::_ic_rat_tumour(Grid<W,B>& grid, int pID, double scale)
     sprintf(dataFolder,"../../Anatmoy/");
 #endif
     
+    
     if(pID == 0) // Atlas
-        sprintf(patientFolder, "%RAT_ATLAS/atlas",dataFolder);
+        sprintf(patientFolder, "%sRAT_ATLAS/atlas",dataFolder);
     else  // Rats
-        sprintf(patientFolder, "%M%02d/M%02d",dataFolder,pID,pID);
+        sprintf(patientFolder, "%sM%02d/M%02d",dataFolder,pID,pID);
+    
     
     printf("Reading anatomy from: %s", patientFolder);
     
@@ -249,7 +269,7 @@ void Glioma_HG_UQ::_ic_rat_tumour(Grid<W,B>& grid, int pID, double scale)
     int brainSizeZ = (int) GM.getSizeZ();
     
     int brainSizeMax = max(brainSizeX, max(brainSizeY,brainSizeZ));
-    L    = brainSizeMax * 0.1;   // voxel spacing 117 µm, convert to mm -> L ~ 14 mm
+    L    = brainSizeMax * 0.117;   // voxel spacing 117 µm, convert to mm -> L ~ 14 mm
     
     std::cout<<"brainSizeX="<<brainSizeX<<" brainSizeY="<<brainSizeY<<" brainSizeZ="<<brainSizeZ<<std::endl;
     
@@ -293,12 +313,19 @@ void Glioma_HG_UQ::_ic_rat_tumour(Grid<W,B>& grid, int pID, double scale)
                         tumour  = Tumour(mappedBrainX,mappedBrainY,mappedBrainZ);
                     }
                     
-                    Pcsf = ( Pcsf > 0.1 ) ? 1. : Pcsf;  // threasholding to ensure hemisphere separations
-                    
-                    if(Pcsf  < 1.)
+                    double all = PGt + PWt + Pcsf;
+
+                    if(all > 0)
                     {
-                        block(ix,iy,iz).p_w    = PWt  / (PWt + PGt);
-                        block(ix,iy,iz).p_g    = PGt  / (PWt + PGt);
+                        
+                        Pcsf = ( Pcsf > 0.1 ) ? 1. : Pcsf;  // threasholding to ensure hemisphere separations
+                        block(ix,iy,iz).p_csf = Pcsf;
+                        
+                        if(Pcsf  < 1.)
+                        {
+                            block(ix,iy,iz).p_w    = PWt  / (PWt + PGt);
+                            block(ix,iy,iz).p_g    = PGt  / (PWt + PGt);
+                        }
                     }
                     
                     /* tumour */
@@ -312,14 +339,14 @@ void Glioma_HG_UQ::_ic_rat_tumour(Grid<W,B>& grid, int pID, double scale)
     }
 }
 
-void Glioma_RAT_UQ::_rescale_init_tumour(scale)
+void Glioma_RAT_UQ::_rescale_init_tumour(double scale)
 {
-    vector<BlockInfo> vInfo = grid.getBlocksInfo();
+    vector<BlockInfo> vInfo = grid->getBlocksInfo();
     
     for(int i=0; i<vInfo.size(); i++)
     {
         BlockInfo& info = vInfo[i];
-        B& block = grid.getBlockCollection()[info.blockID];
+        B& block = grid->getBlockCollection()[info.blockID];
         
         for(int iz=0; iz<B::sizeZ; iz++)
             for(int iy=0; iy<B::sizeY; iy++)
@@ -340,12 +367,12 @@ void Glioma_RAT_UQ::_reactionDiffusionStep(BoundaryInfo* boundaryInfo, const int
     Glioma_ReactionDiffusionOperator<_DIM>  rhs(Dw,Dg,rho);
     UpdateTumor                     <_DIM>  updateTumor(dt);
     
-    blockProcessing.pipeline_process(vInfo, collecton, *boundaryInfo, rhs);
+   blockProcessing.pipeline_process(vInfo, collecton, *boundaryInfo, rhs);
     BlockProcessing::process(vInfo, collecton, updateTumor, nParallelGranularity);
 }
     
     
-void Glioma_RAT_UQ::reactionDiffusionNecrosisStep(BoundaryInfo* boundaryInfo, const int nParallelGranularity, const Real Dw, const Real Dg, const Real rho, const double dt, const Real gamma);
+void Glioma_RAT_UQ::_reactionDiffusionNecrosisStep(BoundaryInfo* boundaryInfo, const int nParallelGranularity, const Real Dw, const Real Dg, const Real rho, const double dt, const Real gamma)
 {
     
     vector<BlockInfo> vInfo				= grid->getBlocksInfo();
@@ -363,8 +390,6 @@ void Glioma_RAT_UQ::reactionDiffusionNecrosisStep(BoundaryInfo* boundaryInfo, co
 void Glioma_RAT_UQ:: _dump(int counter)
 {
     
-    if(bVerbose) printf("dumping data \n");
-    
     if (parser("-vtk").asBool())
     {
         char filename[256];
@@ -377,7 +402,7 @@ void Glioma_RAT_UQ:: _dump(int counter)
         }
         else
         {
-            IO_VTKNative3D<W,B, 5,0 > vtkdumper2;
+            IO_VTKNative3D<W,B, 8,0 > vtkdumper2;
             vtkdumper2.Write(*grid, grid->getBoundaryInfo(), filename);
         }
     }
@@ -391,6 +416,7 @@ void Glioma_RAT_UQ::_dumpUQoutput(Grid<W,B>& grid)
 {
     int gpd = blocksPerDimension * blockSize;
     double hf  = 1./gpd;
+    double eps = hf*0.1;
     
     if(bVerbose) printf("bpd=%i, bs=%i, hf=%f,\n",blocksPerDimension,blockSize,hf);
     
@@ -418,22 +444,23 @@ void Glioma_RAT_UQ::_dumpUQoutput(Grid<W,B>& grid)
                     int my = (int)floor( (x[1]) / hf  );
                     int mz = (int)floor( (x[2]) / hf  );
                     
-                    
-                    if(h==hf)
+                    if(h < 2.*hf - eps)
                         tumor(mx,my,mz) = block(ix,iy,iz).phi;
-                    else if(h == 2.*hf)
+                    else if(h < 3.*hf - eps)
                     {
                         for(int cz=0; cz<2; cz++)
                             for(int cy=0; cy<2; cy++)
                                 for(int cx=0; cx<2; cx++)
                                     tumor(mx+cx,my+cy,mz+cz) = block(ix,iy,iz).phi;
+                        
                     }
-                    else if (h == 3.*hf)
+                    else if (h < 4.*hf - eps)
                     {
                         for(int cz=0; cz<3; cz++)
                             for(int cy=0; cy<3; cy++)
                                 for(int cx=0; cx<3; cx++)
                                     tumor(mx+cx,my+cy,mz+cz) = block(ix,iy,iz).phi;
+                        
                     }
                     else
                     {
@@ -446,14 +473,84 @@ void Glioma_RAT_UQ::_dumpUQoutput(Grid<W,B>& grid)
         
     }
     
-    char filename2[256];
-    sprintf(filename2,"HGG_data.dat");
-    tumor.dump(filename2);
+    char filename[256];
+    sprintf(filename,"RAT_%d_IC_data.dat",pID);
+    tumor.dump(filename);
+    
+}
+
+/* Dump tumour concentration for the synthethic inference */
+void Glioma_RAT_UQ::_dumpSyntheticData(Grid<W,B>& grid, double t)
+{
+    int gpd = blocksPerDimension * blockSize;
+    double hf  = 1./gpd;
+    double eps = hf*0.1;
+    int time_point = (int) t;
+    
+    if(bVerbose) printf("bpd=%i, bs=%i, hf=%f,\n",blocksPerDimension,blockSize,hf);
+    
+    MatrixD3D tumor(gpd,gpd,gpd);
+    
+    vector<BlockInfo> vInfo = grid.getBlocksInfo();
+    
+#pragma omp parallel for
+    for(int i=0; i<vInfo.size(); i++)
+    {
+        BlockInfo& info = vInfo[i];
+        B& block = grid.getBlockCollection()[info.blockID];
+        double h = info.h[0];
+        
+        
+        for(int iz=0; iz<B::sizeZ; iz++)
+            for(int iy=0; iy<B::sizeY; iy++)
+                for(int ix=0; ix<B::sizeX; ix++)
+                {
+                    double x[3];
+                    info.pos(x, ix, iy, iz);
+                    
+                    //mapped coordinates
+                    int mx = (int)floor( (x[0]) / hf  );
+                    int my = (int)floor( (x[1]) / hf  );
+                    int mz = (int)floor( (x[2]) / hf  );
+                    
+                    if(h < 2.*hf - eps)
+                        tumor(mx,my,mz) = block(ix,iy,iz).phi;
+                    else if(h < 3.*hf - eps)
+                    {
+                        for(int cz=0; cz<2; cz++)
+                            for(int cy=0; cy<2; cy++)
+                                for(int cx=0; cx<2; cx++)
+                                    tumor(mx+cx,my+cy,mz+cz) = block(ix,iy,iz).phi;
+                        
+                    }
+                    else if (h < 4.*hf - eps)
+                    {
+                        for(int cz=0; cz<3; cz++)
+                            for(int cy=0; cy<3; cy++)
+                                for(int cx=0; cx<3; cx++)
+                                    tumor(mx+cx,my+cy,mz+cz) = block(ix,iy,iz).phi;
+                        
+                    }
+                    else
+                    {
+                        for(int cz=0; cz<4; cz++)
+                            for(int cy=0; cy<4; cy++)
+                                for(int cx=0; cx<4; cx++)
+                                    tumor(mx+cx,my+cy,mz+cz) = block(ix,iy,iz).phi;
+                    }
+                }
+        
+    }
+    
+    char filename[256];
+    sprintf(filename,"M%dJ%d_syn_data.dat",pID,time_point);
+    tumor.dump(filename);
     
 }
 
 
-void Glioma_HG_UQ::run()
+
+void Glioma_RAT_UQ::run()
 {
     
     bool bProfiler = 0;
@@ -475,8 +572,10 @@ void Glioma_HG_UQ::run()
         mydata.close();
     }
     
+    
+    Real Dscale = 1./parser("-Dscale").asDouble();
     Dw = Dw/(L*L);  // rescale w.r.t. to characeteristic length
-    Dg = 0.1*Dw;
+    Dg = Dscale*Dw;
     
     double t			= 0.0;
     int iCounter        = 1;
@@ -485,15 +584,16 @@ void Glioma_HG_UQ::run()
     if(bVerbose)  printf("Dg=%e, Dw=%e, dt= %f, rho=%f , h=%f\n", Dg, Dw, dt, rho,h);
     
     
-    if(bRescale)
-       _rescale_init_tumour(scale);
-    
-    _dump(iCounter)
-    iCounter++;
+    if(parser("-bRescale").asBool())
+    {
+        _rescale_init_tumour(scale);
+        _dump(iCounter);
+        iCounter++;
+    }
     
     // decide model type
-    ModelType = parser("-ModelType").aInt();
-    if(bVerbose)  printf("using model type %d", ModelType);
+    ModelType = parser("-ModelType").asInt();
+    if(bVerbose)  printf("using model type %d \n", ModelType);
     
     while (t <= tend)
     {
