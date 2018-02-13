@@ -412,81 +412,13 @@ void Glioma_RAT_UQ:: _dump(int counter)
  - dump at the uniform finest resolution
  - use 3D Matrix structure to dump data in binary format
  - assume 3D simulation */
-void Glioma_RAT_UQ::_dumpUQoutput(Grid<W,B>& grid)
-{
-    int gpd = blocksPerDimension * blockSize;
-    double hf  = 1./gpd;
-    double eps = hf*0.1;
-    
-    if(bVerbose) printf("bpd=%i, bs=%i, hf=%f,\n",blocksPerDimension,blockSize,hf);
-    
-    MatrixD3D tumor(gpd,gpd,gpd);
-    
-    vector<BlockInfo> vInfo = grid.getBlocksInfo();
-    
-#pragma omp parallel for
-    for(int i=0; i<vInfo.size(); i++)
-    {
-        BlockInfo& info = vInfo[i];
-        B& block = grid.getBlockCollection()[info.blockID];
-        double h = info.h[0];
-        
-        
-        for(int iz=0; iz<B::sizeZ; iz++)
-            for(int iy=0; iy<B::sizeY; iy++)
-                for(int ix=0; ix<B::sizeX; ix++)
-                {
-                    double x[3];
-                    info.pos(x, ix, iy, iz);
-                    
-                    //mapped coordinates
-                    int mx = (int)floor( (x[0]) / hf  );
-                    int my = (int)floor( (x[1]) / hf  );
-                    int mz = (int)floor( (x[2]) / hf  );
-                    
-                    if(h < 2.*hf - eps)
-                        tumor(mx,my,mz) = block(ix,iy,iz).phi;
-                    else if(h < 3.*hf - eps)
-                    {
-                        for(int cz=0; cz<2; cz++)
-                            for(int cy=0; cy<2; cy++)
-                                for(int cx=0; cx<2; cx++)
-                                    tumor(mx+cx,my+cy,mz+cz) = block(ix,iy,iz).phi;
-                        
-                    }
-                    else if (h < 4.*hf - eps)
-                    {
-                        for(int cz=0; cz<3; cz++)
-                            for(int cy=0; cy<3; cy++)
-                                for(int cx=0; cx<3; cx++)
-                                    tumor(mx+cx,my+cy,mz+cz) = block(ix,iy,iz).phi;
-                        
-                    }
-                    else
-                    {
-                        for(int cz=0; cz<4; cz++)
-                            for(int cy=0; cy<4; cy++)
-                                for(int cx=0; cx<4; cx++)
-                                    tumor(mx+cx,my+cy,mz+cz) = block(ix,iy,iz).phi;
-                    }
-                }
-        
-    }
-    
-    char filename[256];
-    sprintf(filename,"RAT_%d_IC_data.dat",pID);
-    tumor.dump(filename);
-    
-}
-
-/* Dump tumour concentration for the synthethic inference */
-void Glioma_RAT_UQ::_dumpSyntheticData(Grid<W,B>& grid, double t)
+void Glioma_RAT_UQ::_dumpUQoutput(int type, double t)
 {
     int gpd = blocksPerDimension * blockSize;
     double hf  = 1./gpd;
     double eps = hf*0.1;
     int time_point = (int) t;
-    
+
     if(bVerbose) printf("bpd=%i, bs=%i, hf=%f,\n",blocksPerDimension,blockSize,hf);
     
     MatrixD3D tumor(gpd,gpd,gpd);
@@ -543,11 +475,15 @@ void Glioma_RAT_UQ::_dumpSyntheticData(Grid<W,B>& grid, double t)
     }
     
     char filename[256];
-    sprintf(filename,"M%dJ%d_syn_data.dat",pID,time_point);
+    
+    if(type==0)
+        sprintf(filename,"RAT_%d_IC_data.dat",pID);
+    else
+        sprintf(filename,"M%dJ%d_syn_data.dat",pID,time_point);
+
     tumor.dump(filename);
     
 }
-
 
 
 void Glioma_RAT_UQ::run()
@@ -582,7 +518,7 @@ void Glioma_RAT_UQ::run()
     double h            = 1./(blockSize*blocksPerDimension);
     double dt           = 0.99 * h*h / ( 2.* _DIM * max(Dw, Dg) );
     if(bVerbose)  printf("Dg=%e, Dw=%e, dt= %f, rho=%f , h=%f\n", Dg, Dw, dt, rho,h);
-    
+    int UQtype          = parser("-UQtype").asInt(1); // 0 generate synthetic data, 1 runs UQ
     
     if(parser("-bRescale").asBool())
     {
@@ -614,6 +550,7 @@ void Glioma_RAT_UQ::run()
                 Science::AutomaticCompression	<0,0>(*grid, blockfwt, compression_tolerance, -1, &profiler);
             }
             
+            _dumpUQoutput(UQtype,t);
             _dump(iCounter);
             iCounter++;
             whenToWrite = whenToWrite + whenToWriteOffset;
@@ -628,7 +565,7 @@ void Glioma_RAT_UQ::run()
         Science::AutomaticRefinement	<0,0>(*grid, blockfwt, refinement_tolerance, maxLevel, 1, &profiler);
     
     
-    _dumpUQoutput(*grid);
+    _dumpUQoutput(UQtype,t);
     _dump(iCounter);
     
     if(bVerbose) profiler.printSummary();
