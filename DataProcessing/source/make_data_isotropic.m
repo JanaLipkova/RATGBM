@@ -17,9 +17,9 @@ addpath('../lib/Matlab2C/matrixMatlab2Cpp/matlab/')
 addpath('../lib/')
 
 % 0) set input paht
-rID = 42 %42,38,36,34,30,29
+rID = 29 %42,38,36,34,30,29
 bAnatomy = 1;
-day_list =  [9,11,14,16];%[9,11,14,16];
+day_list =  [9,11,14,16];
 
 for day = day_list
     day
@@ -34,10 +34,9 @@ for day = day_list
     outputAnatPath = [inputRatPath,'isotropic/anatomy/'];
     outputModPath  = [inputRatPath,'isotropic/modalities/'];
     
-    % 1 read in modalities, mask, tumour
-    
+    % 1 read in modalities, mask, tumour    
     T2wm = MRIread([inputModPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-Coreg01_Anat-masked.nii']);
-    T2w  = MRIread([inputModPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-Coreg01_Anat.nii']);
+%     T2w  = MRIread([inputModPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-Coreg01_Anat.nii']);
     DCE  = MRIread([inputModPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-CoregDCE-AUC.nii']);
     mask = MRIread([inputMaskPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-Mask.nii']);
     T2ws = MRIread([inputTumPath,'M',num2str(rID),'_J',num2str(day,'%02d'),'_T2w.nii']);
@@ -50,7 +49,7 @@ for day = day_list
     interp = '*linear';   %'linear', 'nearest', 'cubic', 'makima', or 'spline'
     
     T2wm.vol = resize3d(T2wm.vol, newRes,interp);
-    T2w.vol  = resize3d(T2w.vol,  newRes,interp);
+%     T2w.vol  = resize3d(T2w.vol,  newRes,interp);
     DCE.vol  = resize3d(DCE.vol,  newRes,interp);
     mask.vol = resize3d(mask.vol, newRes,interp);
     T2ws.vol = resize3d(T2ws.vol, newRes,interp);
@@ -72,7 +71,7 @@ for day = day_list
     
     % 4) save
     MRIwrite(T2wm, [outputModPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-Coreg_Anat-masked-iso.nii']);    
-    MRIwrite(T2w,  [outputModPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-Coreg_Anat-iso.nii']);
+%     MRIwrite(T2w,  [outputModPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-Coreg_Anat-iso.nii']);
     MRIwrite(DCE,  [outputModPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-CoregDCE-AUC-iso.nii']);
     
     MRIwrite(mask, [outputAnatPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-Mask-iso.nii']);
@@ -83,15 +82,15 @@ end;
 %% Anatomies
 if (bAnatomy)
     day=8;
-    csf = MRIread([inputAnatPath,'M',num2str(rID),'-J',num2str(day,'%02d'),'-Atlas_CSF-ROI.nii']);
-    wm  = MRIread([inputAnatPath,'M',num2str(rID),'-J',num2str(day,'%02d'),'-Atlas_WM-ROI.nii']);
-    gm  = MRIread([inputAnatPath,'M',num2str(rID),'-J',num2str(day,'%02d'),'-Atlas_GM-ROI.nii']);
-    
-% 
-%     csf = MRIread([inputAnatPath,'M',num2str(rID),'-J',num2str(day,'%02d'),'-VOI-Atlas_CSF.nii']);
-%     wm  = MRIread([inputAnatPath,'M',num2str(rID),'-J',num2str(day,'%02d'),'-VOI-Atlas_WM.nii']);
-%     gm  = MRIread([inputAnatPath,'M',num2str(rID),'-J',num2str(day,'%02d'),'-VOI-Atlas_GM.nii']);
+%     csf = MRIread([inputAnatPath,'M',num2str(rID),'-J',num2str(day,'%02d'),'-Atlas_CSF-ROI.nii']);
+%     wm  = MRIread([inputAnatPath,'M',num2str(rID),'-J',num2str(day,'%02d'),'-Atlas_WM-ROI.nii']);
+%     gm  = MRIread([inputAnatPath,'M',num2str(rID),'-J',num2str(day,'%02d'),'-Atlas_GM-ROI.nii']);
 %     
+
+    csf = MRIread([inputAnatPath,'M',num2str(rID),'-J',num2str(day,'%02d'),'-VOI-Atlas_CSF.nii']);
+    wm  = MRIread([inputAnatPath,'M',num2str(rID),'-J',num2str(day,'%02d'),'-VOI-Atlas_WM.nii']);
+    gm  = MRIread([inputAnatPath,'M',num2str(rID),'-J',num2str(day,'%02d'),'-VOI-Atlas_GM.nii']);
+    
     csf.vol = resize3d(csf.vol, newRes,interp);
     wm.vol  = resize3d(wm.vol, newRes,interp);
     gm.vol  = resize3d(gm.vol, newRes,interp);
