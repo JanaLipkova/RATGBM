@@ -423,13 +423,13 @@ void Glioma_RAT_UQ::_dumpUQoutput(int type, double t)
     
     MatrixD3D tumor(gpd,gpd,gpd);
     
-    vector<BlockInfo> vInfo = grid.getBlocksInfo();
+    vector<BlockInfo> vInfo = grid->getBlocksInfo();
     
 #pragma omp parallel for
     for(int i=0; i<vInfo.size(); i++)
     {
         BlockInfo& info = vInfo[i];
-        B& block = grid.getBlockCollection()[info.blockID];
+        B& block = grid->getBlockCollection()[info.blockID];
         double h = info.h[0];
         
         
