@@ -24,7 +24,7 @@ endif
 #set parameters
 dim ?= 3 
 bpd ?= 8
-bs ?= 20 
+bs ?= 18 
 #bpd = 8 for lower resolution, bs=16 
 CPPFLAGS += -D_DIM=$(dim) -D_BLOCKSIZE_=$(bs) -D_BPD_=$(bpd) 
 CPPFLAGS += -D HGG

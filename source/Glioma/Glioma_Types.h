@@ -227,11 +227,11 @@ struct CCell_extended
             case 2: return necro;
             case 3: return max(phi - necro, (Real)0.);
             case 4: return 0.1 * p_g + 0.2 * p_w;
-            case 5: return t1bc;
-            case 6: return t2bc;
-            case 7: return p_w;
-            case 8: return p_g;
-            case 9: return p_csf;
+            case 5: return p_w;
+            case 6: return p_g;
+            case 7: return p_csf;
+            case 8: return t1bc;
+            case 9: return t2bc;
 #endif
         
                 
@@ -455,7 +455,7 @@ static double rho   ;
 //static const int resJump			= 2;    // modulo(maxLevel,resJum) = 0, !!! and reJump < maxLevel, the bigger jump, the better adaptivity-> the faster
 
 static const int maxLevel = _MAXLEVEL_;    // 4 for 16bpd, 3 for 8bpd has maxLevel 3 since 2^3
-static const int resJump  = 1;    // modulo(maxLevel,resJum) = 0, !!! and reJump < maxLevel, the bigger jump, the better adaptivity-> the faster
+static const int resJump  = 2;    // modulo(maxLevel,resJum) = 0, !!! and reJump < maxLevel, the bigger jump, the better adaptivity-> the faster
 const double refinement_tolerance	= 1e-4;
 const double compression_tolerance	= 1e-5;
 

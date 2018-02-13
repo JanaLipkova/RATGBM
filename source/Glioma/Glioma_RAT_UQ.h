@@ -45,6 +45,8 @@ private:
     void        _reactionDiffusionNecrosisStep(BoundaryInfo* boundaryInfo, const int nParallelGranularity, const Real Dw, const Real Dg, const Real rho, double dt, const Real gamma);
     void		_dump(int counter);
     void        _dumpUQoutput(Grid<W,B>& grid);
+    void        _dumpSyntheticData(Grid<W,B>& grid, double t);
+
     
     
 public:
