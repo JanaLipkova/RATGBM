@@ -41,17 +41,15 @@ class HGG_Likelihood
 {
 private:
     ArgumentParser		 parser;
-    long double          _computePETLogLikelihood(MatrixD3D model);
-    long double          _computeTiLogLikelihood(MatrixD3D model, int Ti);
+    long double          _computeTiLogLikelihood(MatrixD3D model, int day, int Ti);
     long double          _computeLogBernoulli(double y, double u, int Ti);
     void                 _writeToFile(long double output);
     int                  sgn(double d);
 
-    double               PETsigma2, PETscale;
+    double               T1uc;
+    double               T2uc;
     double               slope;  //same for T1 & T2(sigma2 double sigmoid, k singel sigmoid)
-    double               T1uc,    T2uc;
-    bool                 bSelectivePoints;
-    int                  stepPET, stepTi;
+
     
     
 public:
