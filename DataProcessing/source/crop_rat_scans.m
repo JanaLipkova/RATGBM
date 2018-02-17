@@ -15,12 +15,12 @@ addpath('../lib/vi');
 addpath('../lib/Matlab2C/matrixMatlab2Cpp/matlab/')
 addpath('../lib/')
 
-for rID = [42 38 36 34 30 29]
-    rID
+% for rID = [42 38 36 34 30 29]
+%     rID
     day_list = [9,11,14,16];
     bAnatomy = 1;
-    bRATS=1;
-    bATLAS=0;
+    bRATS=0;
+    bATLAS=1;
     
     
     if(bRATS)
@@ -130,7 +130,7 @@ for rID = [42 38 36 34 30 29]
         end;
         
     end;
-end;
+% end;
 
 
 if(bATLAS)
@@ -159,6 +159,19 @@ if(bATLAS)
     gm.vol = padarray(gm.vol,[gp gp gp],0,'both');
     csf.vol = padarray(csf.vol,[gp gp gp],0,'both');
     
+    
+    [Nx,Ny,Nz] = size(csf.vol);
+    px = 144 - Nx;
+    py = 144 - Ny;
+    pz = 144 - Nz;
+    
+    csf.vol = padarray(csf.vol,[px py pz],0,'post');
+    wm.vol  = padarray(wm.vol, [px py pz],0,'post');
+    gm.vol  = padarray(gm.vol, [px py pz],0,'post');
+    mask.vol = padarray(mask.vol, [px py pz],0,'post');
+    atlas.vol = padarray(atlas.vol, [px py pz],0,'post');
+
+        
     % make segmentations binary
     LB=0.3;
     mask.vol(mask.vol(:)<=LB) = 0;
