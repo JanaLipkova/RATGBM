@@ -14,8 +14,6 @@ HGG_Likelihood::HGG_Likelihood(const int argc, const char ** argv):parser(argc, 
     
     if (mydata.is_open())
     {
-        mydata >> PETsigma2;
-        mydata >> PETscale;
         mydata >> T1uc;
         mydata >> T2uc;
         mydata >> slope;
@@ -27,103 +25,43 @@ HGG_Likelihood::HGG_Likelihood(const int argc, const char ** argv):parser(argc, 
         abort();
     }
     
-    bSelectivePoints = parser("-selectivePoints").asBool(1);
-    stepPET = parser("-stepPet").asInt(3);
-    stepTi  = parser("-stepTi").asInt(2);
-    
-    printf("PET: PETsigma2=%f, PETscale=%f \n",PETsigma2,PETscale );
     printf("MRI: T1uc=%f, T2uc =%f, slope=%f \n", T1uc, T2uc, slope);
-    printf("stepPET=%d, stepTi =%d \n", stepPET, stepTi);
-
 }
 
-long double HGG_Likelihood::_computePETLogLikelihood(MatrixD3D model)
-{
-    /* 1) Read in PET data */
-    char filename[256];
-    sprintf(filename,"PET_data.dat");
-    MatrixD3D PETdata(filename);   // pet signal, u_real = PETscale*pet_signal
-    
-    int dataX = PETdata.getSizeX();
-    int dataY = PETdata.getSizeY();
-    int dataZ = PETdata.getSizeZ();
-    
-    int N = 0;
-    long double sum = 0.;
-    
-    
-    for (int iz = 0; iz < dataZ; iz++)
-        for (int iy = 0; iy < dataY; iy++)
-            for (int ix = 0; ix < dataX; ix++)
-            {
-                if ( (ix % stepPET == 0) &&  (iy % stepPET == 0) && (iz % stepPET == 0) )
-                {
-                    if(PETdata(ix,iy,iz) > 0.)
-                    {
-                        sum += ( model(ix,iy,iz) - PETscale * PETdata(ix,iy,iz) )*( model(ix,iy,iz) - PETscale * PETdata(ix,iy,iz) );
-                        N++;
-                    }
-                }
-            }
-    
-    
-    long double p1 = -0.5 * N * log(2.* M_PI * PETsigma2);
-    long double p2 = -0.5 * (1./PETsigma2) * sum;
-    
-    printf("Points=%i, stepPET=%i \n", N, stepPET);
-    return (p1 + p2);
-}
 
-long double HGG_Likelihood::_computeTiLogLikelihood(MatrixD3D model, int Ti)
+long double HGG_Likelihood::_computeTiLogLikelihood(MatrixD3D model, int day, int Ti)
 {
-    /* 1) Read in T1 data */
+    /* 1) Read in Ti data */
     char filename[256];
-    
-    if(Ti ==1 )
-        sprintf(filename,"T1_data.dat");
-    else
-        sprintf(filename,"T2_data.dat");
+    sprintf(filename,"T%dw_D%02d.dat",Ti,day);
+
     
     MatrixD3D data(filename);
     int dataX = data.getSizeX();
     int dataY = data.getSizeY();
     int dataZ = data.getSizeZ();
     
+    MatrixD3D mask("Mask.dat");
+    int Npoints = 0;
+    
     long int N = dataX*dataY*dataZ;
     assert(N == model.getSizeX() * model.getSizeY() * model.getSizeZ() );
     
     long double sum = 0.;
+    int cor_leng = 6;
     
-    if(!bSelectivePoints)
-    {
-        //#pragma omp parallel for reduction(+:sum)
-        for (int iz = 0; iz < dataZ; iz++)
-            for (int iy = 0; iy < dataY; iy++)
-                for (int ix = 0; ix < dataX; ix++)
+    for (int iz = 0; iz < dataZ; iz=iz+cor_leng )
+        for (int iy = 0; iy < dataY; iy++)
+            for (int ix = 0; ix < dataX; ix++)
+            {
+                if(mask(ix,iy,iz) > 0.01)
+                {
                     sum += _computeLogBernoulli(model(ix,iy,iz), data(ix,iy,iz), Ti);
-    }
-    else
-    {
-        sprintf(filename,"Sphere.dat");
-        MatrixD2D Points(filename);
-        int Npoints = Points.getSizeX();
-        
-        for(int i=0; i<Npoints; i++)
-        {
-            int ix = Points(i,0);
-            int iy = Points(i,1);
-            int iz = Points(i,2);            
-
-            if ( (ix % stepTi == 0) &&  (iy % stepTi == 0) && (iz % stepTi == 0) )
-                sum += _computeLogBernoulli(model(ix,iy,iz), data(ix,iy,iz), Ti);
-            
-        }
-        
-        printf("Ti Npoints = %i \n",Npoints);
-
-    }
+                    Npoints++;
+                }
+            }
     
-    printf("LogLike of T%i = %Lf \n",Ti, sum);
+    printf("LogLike of day %d of T%d = %Lf (using Npoints=%d) \n", day, Ti, sum, Npoints);
     return sum;
 }
 
@@ -173,16 +111,24 @@ void HGG_Likelihood::_writeToFile(long double output)
 void HGG_Likelihood::run()
 {
     char filename[256];
-    sprintf(filename,"HGG_data.dat");
-    MatrixD3D model(filename);
+    sprintf(filename,"M_UQ_J09.dat");
+    MatrixD3D model_J9(filename);
     
-    long double Lpet = _computePETLogLikelihood(model);
-    long double Lt1  = _computeTiLogLikelihood(model, 1);
-    long double Lt2  = _computeTiLogLikelihood(model, 2);
+    sprintf(filename,"M_UQ_J1.dat");
+    MatrixD3D model_J11(filename);
+
     
-    long double costFunction = Lpet + Lt1 + Lt2;
+    int day = 9;
+    long double LT1_J9  = _computeTiLogLikelihood(model_J9, day, 1);
+    long double LT2_J9  = _computeTiLogLikelihood(model_J9, day, 2);
+    
+    day = 11;
+    long double LT1_J11  = _computeTiLogLikelihood(model_J11, day, 1);
+    long double LT2_J11  = _computeTiLogLikelihood(model_J11, day, 2);
+    
+    long double costFunction = LT1_J9 + LT2_J9 + LT1_J11 + LT2_J11 ;
    
-    printf("L_Pet=%Lf, L_T1=%Lf, L_T2 = %Lf \n", Lpet, Lt1, Lt2);
+    printf("LT1_J9=%Lf, LT2_J9=%Lf, LT1_J11=%Lf, LT2_J11=%Lf, \n", LT1_J9, LT2_J9, LT1_J11, LT2_J11);
     printf("LogLike = %Lf \n", costFunction);
     _writeToFile(costFunction);
 
