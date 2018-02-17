@@ -26,7 +26,9 @@ private:
     BlockLab< B >							lab;
     int										numberOfIterations;
     double                                  whenToWrite;
+    double                                  whenToRefine;
     double                                  whenToWriteOffset;
+    double                                  whenToRefineOffset;
     bool                                    isDone;
     bool                                    bAdaptivity;
     bool                                    bVerbose;
@@ -37,14 +39,12 @@ private:
     
     
     static void _ic_rat_point_tumor(Grid<W,B>& grid, int pID);
-    static void _ic_rat_tumour(Grid<W,B>& grid, int pID);
     static void _readInTumorPosition(vector<Real>& tumorIC);
-    void        _rescale_init_tumour(double scale);
     
     void        _reactionDiffusionStep(BoundaryInfo* boundaryInfo, const int nParallelGranularity, const Real Dw, const Real Dg, const Real rho, double dt);
     void        _reactionDiffusionNecrosisStep(BoundaryInfo* boundaryInfo, const int nParallelGranularity, const Real Dw, const Real Dg, const Real rho, double dt, const Real gamma);
     void		_dump(int counter);
-    void        _dumpUQoutput(int type, double t);
+    void        _dumpUQoutput(double t);
     
     
 public:

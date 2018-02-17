@@ -147,9 +147,16 @@ struct Glioma_ReactionDiffusionNecrosisOperator
                                                          df[5]*lab(ix, iy, iz+1).phi   );
                         
                         double diffusionFluxOut = -( (df[0] + df[1] + df[2] + df[3] + df[4] + df[5]) * lab(ix, iy, iz).phi * ih2 );
-                        double reactionFlux		= rho * lab(ix,iy,iz).phi * ( 1. - lab(ix,iy,iz).phi - lab(ix,iy,iz).necro );
-                        double necroticFlux     = gamma_rate * lab(ix,iy,iz).phi * ( 1. - lab(ix,iy,iz).phi - lab(ix,iy,iz).necro );
+//                        double reactionFlux		= rho * lab(ix,iy,iz).phi * ( 1. - lab(ix,iy,iz).phi - lab(ix,iy,iz).necro );
+//                        double necroticFlux     = gamma_rate * lab(ix,iy,iz).phi * ( 1. - lab(ix,iy,iz).phi - lab(ix,iy,iz).necro );
                         
+//                        double reactionFlux		= rho * lab(ix,iy,iz).phi * ( 1. - lab(ix,iy,iz).phi );
+//                        double necroticFlux     = gamma_rate * lab(ix,iy,iz).phi ;
+                        
+                        double reactionFlux		= rho * lab(ix,iy,iz).phi * ( 1. - lab(ix,iy,iz).phi );
+                        double necroticFlux     = gamma_rate * lab(ix,iy,iz).phi * ( 1. - lab(ix,iy,iz).necro) ;
+                        
+//
                         o(ix, iy, iz).dphidt =   diffusionFluxOut + diffusionFluxIn + reactionFlux - necroticFlux;
                         o(ix,iy,iz).dnecrodt =   necroticFlux;
    

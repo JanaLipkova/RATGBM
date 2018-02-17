@@ -117,6 +117,7 @@ Glioma_HG_Propagation.o\
 Glioma_HG_Visualizations.o\
 Glioma_dat2VP.o\
 Glioma_RAT_UQ.o\
+Glioma_RAT_preprocessing.o\
 MRAGBoundaryBlockInfo.o \
 MRAGProfiler.o \
 MRAGWavelets_StaticData.o \

@@ -224,14 +224,13 @@ struct CCell_extended
 #ifdef HGG
             case 0: return phi;
             case 1: return phi + 0.1 * p_g + 0.2 * p_w;
-            case 2: return necro;
-            case 3: return max(phi - necro, (Real)0.);
-            case 4: return 0.1 * p_g + 0.2 * p_w;
-            case 5: return p_w;
-            case 6: return p_g;
-            case 7: return p_csf;
-            case 8: return t1bc;
-            case 9: return t2bc;
+            case 2: return 0.1 * p_g + 0.2 * p_w;
+            case 3: return p_w;
+            case 4: return p_g;
+            case 5: return p_csf;
+            case 6: return chi;
+            case 7: return t1bc;
+            case 8: return t2bc;
 #endif
         
                 
@@ -448,7 +447,7 @@ static double ICP	;		// ICP in mmHg
 
 static const double Omega = 1.0e7;		// concentration of cells per unif of volume
 static double rho   ;
-
+//
 
 // Multiresolution parameters
 //static const int maxLevel = 4;              // 16bpd has maxLevel 4 since 2^4

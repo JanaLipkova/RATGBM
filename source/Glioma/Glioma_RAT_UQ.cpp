@@ -31,32 +31,18 @@ Glioma_RAT_UQ::Glioma_RAT_UQ(int argc, const char ** argv): parser(argc, argv)
     stSorter.connect(*grid);
     
     bAdaptivity = parser("-adaptive").asBool();
-    ICtype = parser("-ICtype").asInt();
     pID =  parser("-pID").asInt();
-    
-    switch (ICtype)
-    {
-        case 0:
-            _ic_rat_point_tumor(*grid, pID);
-            break;
-        
-            
-        case 1:
-            _ic_rat_tumour(*grid, pID);
-            break;
-            
-        default:
-            cout<<"This type of IC is not supported, see Glioma_RAT_UQ.cpp for supported types"<<endl;
-            break;
-    }
-    
+    _ic_rat_point_tumor(*grid, pID);
+
     
     if(parser("-bDumpIC").asBool(1))
     _dump(0);
     
     isDone              = false;
     whenToWriteOffset	= parser("-dumpfreq").asDouble();
-    whenToWrite			= parser("-dumpstart").asDouble();;
+    whenToWrite			= parser("-dumpstart").asDouble();
+    whenToRefine        = parser("refinefreq").asDouble();
+    whenToRefineOffset  = whenToRefine;
 
 //    whenToWrite			= whenToWriteOffset;
     numberOfIterations	= 0;
@@ -86,11 +72,7 @@ void Glioma_RAT_UQ::_ic_rat_point_tumor(Grid<W,B>& grid, int pID)
     sprintf(dataFolder,"../../Anatmoy/");
 #endif
     
-    if(pID == 0) // Atlas
-        sprintf(patientFolder, "%sRAT_ATLAS/atlas",dataFolder);
-    else  // Rats
-        sprintf(patientFolder, "%sM%02d/M%02d",dataFolder,pID,pID);
-    
+    sprintf(patientFolder, "%sM%02d/M%02d",dataFolder,pID,pID);
     printf("Reading anatomy from: %s \n", patientFolder);
     
     sprintf(anatomy, "%s_gm.dat", patientFolder);
@@ -99,6 +81,8 @@ void Glioma_RAT_UQ::_ic_rat_point_tumor(Grid<W,B>& grid, int pID)
     MatrixD3D WM(anatomy);
     sprintf(anatomy, "%s_csf.dat", patientFolder);
     MatrixD3D CSF(anatomy);
+    sprintf(anatomy, "%s_mask.dat", patientFolder);
+    MatrixD3D MASK(anatomy);
 
     int brainSizeX = (int) GM.getSizeX();
     int brainSizeY = (int) GM.getSizeY();
@@ -146,23 +130,25 @@ void Glioma_RAT_UQ::_ic_rat_point_tumor(Grid<W,B>& grid, int pID)
                     int mappedBrainZ = (int)floor( x[2] / brainHz  );
                     
                     
-                    Real PGt, PWt, Pcsf;
+                    Real PGt, PWt, Pcsf, Pmask;
                     
                     if ( (mappedBrainX < 0 || mappedBrainX >= brainSizeX) || (mappedBrainY < 0 || mappedBrainY >= brainSizeY) || (mappedBrainZ < 0 || mappedBrainZ >= brainSizeZ) )                    {
-                        PGt  = 0.;
-                        PWt  = 0.;
-                        Pcsf = 0.;
+                        PGt   = 0.;
+                        PWt   = 0.;
+                        Pcsf  = 0.;
+                        Pmask = 0.;
                     }
                     else
                     {
                         PGt  =  GM(mappedBrainX,mappedBrainY,mappedBrainZ);
                         PWt  =  WM(mappedBrainX,mappedBrainY,mappedBrainZ);
                         Pcsf =  CSF(mappedBrainX,mappedBrainY,mappedBrainZ);
+                        Pmask = MASK(mappedBrainX,mappedBrainY,mappedBrainZ);
                     }
                     
                     double all = PGt + PWt + Pcsf;
                     
-                    if(all>  0)
+                    if( (all >  0.)||(Pmask > 0.) )
                     {
                         Pcsf = ( Pcsf > 0.1 ) ? 1. : Pcsf;  // threasholding to ensure hemisphere separations
                         block(ix,iy,iz).p_csf = Pcsf;
@@ -173,6 +159,8 @@ void Glioma_RAT_UQ::_ic_rat_point_tumor(Grid<W,B>& grid, int pID)
                             block(ix,iy,iz).p_g    = PGt  / (PWt + PGt);
                         }
                     }
+                    
+                    
                     
                     /* tumor */
                     const Real p[3] = {x[0] - tumor_ic[0], x[1] - tumor_ic[1], x[2] - tumor_ic[2]};
@@ -187,7 +175,7 @@ void Glioma_RAT_UQ::_ic_rat_point_tumor(Grid<W,B>& grid, int pID)
                         block(ix,iy,iz).phi = 0.0;
                     
                     block(ix,iy,iz).phi = min(1.0, 4.*block(ix,iy,iz).phi ); //to ensure that max concentraiton is 1, for correct front propagation speed
-                    block(ix,iy,iz).necro = 0.0;
+                    block(ix,iy,iz).chi = Pmask;
                     
                 }
         
@@ -227,134 +215,6 @@ void Glioma_RAT_UQ::_readInTumorPosition(vector<Real>& tumorIC )
     free(buffer);
     fclose (fp);
 }
-
-
-/* Read initialise tumour from file
- 1) read in anatomies - rescaled to [0,1]^3
- 2) read in tumor center of mass + initialize tumor around
- 3) set length of brain */
-void Glioma_RAT_UQ::_ic_rat_tumour(Grid<W,B>& grid, int pID)
-{
-    char dataFolder   [200];
-    char patientFolder[200];
-    char anatomy      [200];
-    
-    
-#ifdef LRZ_CLUSTER
-    sprintf(dataFolder,"/home/hpc/txh01/di49zin/GliomaAdvance/RATGBM/source/Anatomy/F98/");
-#else
-    sprintf(dataFolder,"../../Anatmoy/");
-#endif
-    
-    
-    if(pID == 0) // Atlas
-        sprintf(patientFolder, "%sRAT_ATLAS/atlas",dataFolder);
-    else  // Rats
-        sprintf(patientFolder, "%sM%02d/M%02d",dataFolder,pID,pID);
-    
-    
-    printf("Reading anatomy from: %s", patientFolder);
-    
-    sprintf(anatomy, "%s_gm.dat", patientFolder);
-    MatrixD3D GM(anatomy);
-    sprintf(anatomy, "%s_wm.dat", patientFolder);
-    MatrixD3D WM(anatomy);
-    sprintf(anatomy, "%s_csf.dat", patientFolder);
-    MatrixD3D CSF(anatomy);
-    sprintf(anatomy, "%s_tumour_ic.dat", patientFolder);
-    MatrixD3D Tumour(anatomy);
-    
-    int brainSizeX = (int) GM.getSizeX();
-    int brainSizeY = (int) GM.getSizeY();
-    int brainSizeZ = (int) GM.getSizeZ();
-    
-    int brainSizeMax = max(brainSizeX, max(brainSizeY,brainSizeZ));
-    L    = brainSizeMax * 0.117;   // voxel spacing 117 µm, convert to mm -> L ~ 14 mm
-    
-    std::cout<<"brainSizeX="<<brainSizeX<<" brainSizeY="<<brainSizeY<<" brainSizeZ="<<brainSizeZ<<std::endl;
-    
-    double brainHx = 1.0 / ((double)(brainSizeMax)); // should be w.r.t. longest dimension for correct aspect ratio
-    double brainHy = 1.0 / ((double)(brainSizeMax)); // should be w.r.t. longest dimension for correct aspect ratio
-    double brainHz = 1.0 / ((double)(brainSizeMax)); // should be w.r.t. longest dimension for correct aspect ratio
-    
-    vector<BlockInfo> vInfo = grid.getBlocksInfo();
-    
-    for(int i=0; i<vInfo.size(); i++)
-    {
-        BlockInfo& info = vInfo[i];
-        B& block = grid.getBlockCollection()[info.blockID];
-        
-        for(int iz=0; iz<B::sizeZ; iz++)
-            for(int iy=0; iy<B::sizeY; iy++)
-                for(int ix=0; ix<B::sizeX; ix++)
-                {
-                    double x[3];
-                    info.pos(x, ix, iy, iz);
-                    
-                    /* Anatomy */
-                    int mappedBrainX = (int)floor( x[0] / brainHx  );
-                    int mappedBrainY = (int)floor( x[1] / brainHy  );
-                    int mappedBrainZ = (int)floor( x[2] / brainHz  );
-                    
-                    
-                    Real PGt, PWt, Pcsf, tumour;
-                    
-                    if ( (mappedBrainX < 0 || mappedBrainX >= brainSizeX) || (mappedBrainY < 0 || mappedBrainY >= brainSizeY) || (mappedBrainZ < 0 || mappedBrainZ >= brainSizeZ) )                    {
-                        PGt  = 0.;
-                        PWt  = 0.;
-                        Pcsf = 0.;
-                        tumour = 0.;
-                    }
-                    else
-                    {
-                        PGt     =  GM(mappedBrainX,mappedBrainY,mappedBrainZ);
-                        PWt     =  WM(mappedBrainX,mappedBrainY,mappedBrainZ);
-                        Pcsf    =  CSF(mappedBrainX,mappedBrainY,mappedBrainZ);
-                        tumour  = Tumour(mappedBrainX,mappedBrainY,mappedBrainZ);
-                    }
-                    
-                    double all = PGt + PWt + Pcsf;
-
-                    if(all > 0)
-                    {
-                        
-                        Pcsf = ( Pcsf > 0.1 ) ? 1. : Pcsf;  // threasholding to ensure hemisphere separations
-                        block(ix,iy,iz).p_csf = Pcsf;
-                        
-                        if(Pcsf  < 1.)
-                        {
-                            block(ix,iy,iz).p_w    = PWt  / (PWt + PGt);
-                            block(ix,iy,iz).p_g    = PGt  / (PWt + PGt);
-                        }
-                    }
-                    
-                    /* tumour */
-                    block(ix,iy,iz).phi = tumour;
-                    block(ix,iy,iz).necro = 0.0;
-
-                }
-        
-        grid.getBlockCollection().release(info.blockID);
-        
-    }
-}
-
-void Glioma_RAT_UQ::_rescale_init_tumour(double scale)
-{
-    vector<BlockInfo> vInfo = grid->getBlocksInfo();
-    
-    for(int i=0; i<vInfo.size(); i++)
-    {
-        BlockInfo& info = vInfo[i];
-        B& block = grid->getBlockCollection()[info.blockID];
-        
-        for(int iz=0; iz<B::sizeZ; iz++)
-            for(int iy=0; iy<B::sizeY; iy++)
-                for(int ix=0; ix<B::sizeX; ix++)
-                    block(ix,iy,iz).phi = block(ix,iy,iz).phi * scale;
-    }
-}
-
 
 
 #pragma mark ReactionDiffusion
@@ -402,7 +262,7 @@ void Glioma_RAT_UQ:: _dump(int counter)
         }
         else
         {
-            IO_VTKNative3D<W,B, 8,0 > vtkdumper2;
+            IO_VTKNative3D<W,B, 7,0 > vtkdumper2;
             vtkdumper2.Write(*grid, grid->getBoundaryInfo(), filename);
         }
     }
@@ -412,7 +272,7 @@ void Glioma_RAT_UQ:: _dump(int counter)
  - dump at the uniform finest resolution
  - use 3D Matrix structure to dump data in binary format
  - assume 3D simulation */
-void Glioma_RAT_UQ::_dumpUQoutput(int type, double t)
+void Glioma_RAT_UQ::_dumpUQoutput(double t)
 {
     int gpd = blocksPerDimension * blockSize;
     double hf  = 1./gpd;
@@ -475,12 +335,7 @@ void Glioma_RAT_UQ::_dumpUQoutput(int type, double t)
     }
     
     char filename[256];
-    
-    if(type==0)
-        sprintf(filename,"RAT_%d_IC_data.dat",pID);
-    else
-        sprintf(filename,"M%dJ%d_syn_data.dat",pID,time_point);
-
+    sprintf(filename,"M_UQ_J%02d.dat",time_point);
     tumor.dump(filename);
     
 }
@@ -495,65 +350,72 @@ void Glioma_RAT_UQ::run()
     
     /* read in case specific parameters*/
     ifstream mydata("HGG_InputParameters.txt");
-    Real Dg, Dw, rho, scale, gamma;
+    Real Dg, Dw, rho;
     double tend;
     
     if (mydata.is_open())
     {
         mydata >> tend;
-        mydata >> scale;
         mydata >> Dw;
         mydata >> rho;
-        mydata >> gamma;
         mydata.close();
     }
-    
+
     
     Real Dscale = 1./parser("-Dscale").asDouble();
     Dw = Dw/(L*L);  // rescale w.r.t. to characeteristic length
     Dg = Dscale*Dw;
     
+    
+    /* set times of MRI scans */
+    vector<int> timeOfscan ;
+    timeOfscan.push_back(9);
+    timeOfscan.push_back(11);
+    timeOfscan.push_back(14);
+    timeOfscan.push_back(16);
+    std::vector<int>::iterator it = timeOfscan.begin();
+    whenToWrite = *it;
+    
+    
+    /* simulation set up */
     double t			= 0.0;
     int iCounter        = 1;
     double h            = 1./(blockSize*blocksPerDimension);
-    double dt           = 0.99 * h*h / ( 2.* _DIM * max(Dw, Dg) );
+    double dt           = 0.95 * h*h / ( 2.* _DIM * max(Dw, Dg) );
     if(bVerbose)  printf("Dg=%e, Dw=%e, dt= %f, rho=%f , h=%f\n", Dg, Dw, dt, rho,h);
-    int UQtype          = parser("-UQtype").asInt(1); // 0 generate synthetic data, 1 runs UQ
     
-    if(parser("-bRescale").asBool())
+    /* initial refinement & compression */
+    if( (whenToRefine > 0.) && (bAdaptivity) )
     {
-        _rescale_init_tumour(scale);
-        _dump(iCounter);
-        iCounter++;
+        Science::AutomaticRefinement<0,0>(*grid, blockfwt, refinement_tolerance, maxLevel, 1, &profiler);
+        Science::AutomaticCompression<0,0>(*grid, blockfwt, compression_tolerance, -1, &profiler);
     }
     
-    // decide model type
-    ModelType = parser("-ModelType").asInt();
-    if(bVerbose)  printf("using model type %d \n", ModelType);
+    
     
     while (t <= tend)
     {
-        if(ModelType==0)
         _reactionDiffusionStep(boundaryInfo, nParallelGranularity, Dw, Dg, rho, dt);
-        else
-        _reactionDiffusionNecrosisStep(boundaryInfo, nParallelGranularity, Dw, Dg, rho, dt, gamma);
-
-        
         t                   += dt   ;
         numberOfIterations  ++      ;
         
+        
+        // refinment & compression
+        if (( t >= ((double)(whenToRefine)) ) && (bAdaptivity) )
+        {
+            Science::AutomaticRefinement<0,0>(*grid, blockfwt, refinement_tolerance, maxLevel, 1, &profiler);
+            Science::AutomaticCompression<0,0>(*grid, blockfwt, compression_tolerance, -1, &profiler);
+           
+            whenToRefine = whenToRefine+whenToRefineOffset;
+        }
+        
         if ( t >= ((double)(whenToWrite)) )
         {
-            if(bAdaptivity)
-            {
-                Science::AutomaticRefinement	<0,0>(*grid, blockfwt, refinement_tolerance, maxLevel, 1, &profiler);
-                Science::AutomaticCompression	<0,0>(*grid, blockfwt, compression_tolerance, -1, &profiler);
-            }
+            _dumpUQoutput(t);
+            _dump((int)t);
             
-            _dumpUQoutput(UQtype,t);
-            _dump(iCounter);
-            iCounter++;
-            whenToWrite = whenToWrite + whenToWriteOffset;
+            ++it;
+            whenToWrite = *it;
             if(bVerbose) printf("Dumping data at time t=%f\n", t);
             
         }
@@ -561,15 +423,13 @@ void Glioma_RAT_UQ::run()
     
     
     // Refine final state & dump for UQ Likelihood
-    if(bAdaptivity)
-        Science::AutomaticRefinement	<0,0>(*grid, blockfwt, refinement_tolerance, maxLevel, 1, &profiler);
-    
-    
-    _dumpUQoutput(UQtype,t);
-    _dump(iCounter);
+//    if(bAdaptivity)
+//        Science::AutomaticRefinement<0,0>(*grid, blockfwt, refinement_tolerance, maxLevel, 1, &profiler);
+//    
+//    _dumpUQoutput(t);
+//    _dump((int) t);
     
     if(bVerbose) profiler.printSummary();
-    
     if(bVerbose) printf("**** Dumping done\n");
     if(bVerbose) printf("\n\n Run Finished \n\n");
 }
