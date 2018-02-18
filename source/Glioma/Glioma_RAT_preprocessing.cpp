@@ -110,9 +110,9 @@ void Glioma_RAT_preprocessing::_ic(Grid<W,B>& grid, int pID)
                     info.pos(x, ix, iy, iz);
                     
                     /* Anatomy */
-                    int mappedBrainX = (int)floor( x[0] / brainHx  );
-                    int mappedBrainY = (int)floor( x[1] / brainHy  );
-                    int mappedBrainZ = (int)floor( x[2] / brainHz  );
+                    int mappedBrainX = (int)round( x[0] / brainHx  );
+                    int mappedBrainY = (int)round( x[1] / brainHy  );
+                    int mappedBrainZ = (int)round( x[2] / brainHz  );
                     
                     
                     Real PGt, PWt, Pcsf, PT2w, PT1w, Pmask;
@@ -317,9 +317,9 @@ void Glioma_RAT_preprocessing:: _readInTumourSegmentation(Grid<W,B>& grid, int p
                     info.pos(x, ix, iy, iz);
                     
                     /* Anatomy */
-                    int mappedBrainX = (int)floor( x[0] / brainHx  );
-                    int mappedBrainY = (int)floor( x[1] / brainHy  );
-                    int mappedBrainZ = (int)floor( x[2] / brainHz  );
+                    int mappedBrainX = (int)round( x[0] / brainHx  );
+                    int mappedBrainY = (int)round( x[1] / brainHy  );
+                    int mappedBrainZ = (int)round( x[2] / brainHz  );
                     
                     
                     Real PT2w, PT1w;
@@ -414,18 +414,18 @@ void Glioma_RAT_preprocessing::_dump2binary(int day)
                     info.pos(x, ix, iy, iz);
                     
                     //mapped coordinates
-                    int mx = (int)floor( (x[0]) / hf  );
-                    int my = (int)floor( (x[1]) / hf  );
-                    int mz = (int)floor( (x[2]) / hf  );
-                    
-                    if(h < 2.*hf - eps)
+                    int mx = (int)round( (x[0]) / hf  );
+                    int my = (int)round( (x[1]) / hf  );
+                    int mz = (int)round( (x[2]) / hf  );
+
+                    if( h < hf + eps)
                     {
                         tumorT1(mx,my,mz)   = block(ix,iy,iz).t1bc;
                         tumorT2(mx,my,mz)   = block(ix,iy,iz).t2bc;
                         brainMask(mx,my,mz) = block(ix,iy,iz).chi;
 
                     }
-                    else if(h < 3.*hf - eps)
+                    else if(h < 2.*hf + eps)
                     {
                         for(int cz=0; cz<2; cz++)
                             for(int cy=0; cy<2; cy++)
@@ -437,7 +437,7 @@ void Glioma_RAT_preprocessing::_dump2binary(int day)
                                 }
                         
                     }
-                    else if (h < 4.*hf - eps)
+                    else if (h < 3.*hf + eps)
                     {
                         for(int cz=0; cz<3; cz++)
                             for(int cy=0; cy<3; cy++)
@@ -463,7 +463,8 @@ void Glioma_RAT_preprocessing::_dump2binary(int day)
                     }
                 }
         
-    }
+    
+  }
     
     char filename[256];
     

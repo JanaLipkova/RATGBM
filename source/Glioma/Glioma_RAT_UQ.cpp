@@ -125,9 +125,9 @@ void Glioma_RAT_UQ::_ic_rat_point_tumor(Grid<W,B>& grid, int pID)
                     info.pos(x, ix, iy, iz);
                     
                     /* Anatomy */
-                    int mappedBrainX = (int)floor( x[0] / brainHx  );
-                    int mappedBrainY = (int)floor( x[1] / brainHy  );
-                    int mappedBrainZ = (int)floor( x[2] / brainHz  );
+                    int mappedBrainX = (int)round( x[0] / brainHx  );
+                    int mappedBrainY = (int)round( x[1] / brainHy  );
+                    int mappedBrainZ = (int)round( x[2] / brainHz  );
                     
                     
                     Real PGt, PWt, Pcsf, Pmask;
@@ -276,7 +276,7 @@ void Glioma_RAT_UQ::_dumpUQoutput(double t)
 {
     int gpd = blocksPerDimension * blockSize;
     double hf  = 1./gpd;
-    double eps = hf*0.1;
+    double eps = hf*0.5;
     int time_point = (int) t;
 
     if(bVerbose) printf("bpd=%i, bs=%i, hf=%f,\n",blocksPerDimension,blockSize,hf);
@@ -292,7 +292,6 @@ void Glioma_RAT_UQ::_dumpUQoutput(double t)
         B& block = grid->getBlockCollection()[info.blockID];
         double h = info.h[0];
         
-        
         for(int iz=0; iz<B::sizeZ; iz++)
             for(int iy=0; iy<B::sizeY; iy++)
                 for(int ix=0; ix<B::sizeX; ix++)
@@ -301,26 +300,25 @@ void Glioma_RAT_UQ::_dumpUQoutput(double t)
                     info.pos(x, ix, iy, iz);
                     
                     //mapped coordinates
-                    int mx = (int)floor( (x[0]) / hf  );
-                    int my = (int)floor( (x[1]) / hf  );
-                    int mz = (int)floor( (x[2]) / hf  );
-                    
-                    if(h < 2.*hf - eps)
+                    int mx = (int)round( (x[0]) / hf  );
+                    int my = (int)round( (x[1]) / hf  );
+                    int mz = (int)round( (x[2]) / hf  );
+                     
+                    if( h < hf + eps)
                         tumor(mx,my,mz) = block(ix,iy,iz).phi;
-                    else if(h < 3.*hf - eps)
+		   else if(h < 2.*hf + eps)
                     {
                         for(int cz=0; cz<2; cz++)
                             for(int cy=0; cy<2; cy++)
                                 for(int cx=0; cx<2; cx++)
                                     tumor(mx+cx,my+cy,mz+cz) = block(ix,iy,iz).phi;
-                        
                     }
-                    else if (h < 4.*hf - eps)
+                    else if (h < 3.*hf + eps)
                     {
                         for(int cz=0; cz<3; cz++)
                             for(int cy=0; cy<3; cy++)
                                 for(int cx=0; cx<3; cx++)
-                                    tumor(mx+cx,my+cy,mz+cz) = block(ix,iy,iz).phi;
+                                            tumor(mx+cx,my+cy,mz+cz) = block(ix,iy,iz).phi;
                         
                     }
                     else
@@ -329,8 +327,10 @@ void Glioma_RAT_UQ::_dumpUQoutput(double t)
                             for(int cy=0; cy<4; cy++)
                                 for(int cx=0; cx<4; cx++)
                                     tumor(mx+cx,my+cy,mz+cz) = block(ix,iy,iz).phi;
-                    }
+                    			
+			}
                 }
+        
         
     }
     
@@ -351,11 +351,10 @@ void Glioma_RAT_UQ::run()
     /* read in case specific parameters*/
     ifstream mydata("HGG_InputParameters.txt");
     Real Dg, Dw, rho;
-    double tend;
+    double tend = parser("-Tend").asDouble(11.);
     
     if (mydata.is_open())
     {
-        mydata >> tend;
         mydata >> Dw;
         mydata >> rho;
         mydata.close();
@@ -411,8 +410,8 @@ void Glioma_RAT_UQ::run()
         
         if ( t >= ((double)(whenToWrite)) )
         {
-            _dumpUQoutput(t);
-            _dump((int)t);
+            _dumpUQoutput(whenToWrite);
+            _dump((int) whenToWrite );
             
             ++it;
             whenToWrite = *it;
@@ -420,7 +419,7 @@ void Glioma_RAT_UQ::run()
             
         }
     }
-    
+
     
     // Refine final state & dump for UQ Likelihood
 //    if(bAdaptivity)
@@ -428,6 +427,7 @@ void Glioma_RAT_UQ::run()
 //    
 //    _dumpUQoutput(t);
 //    _dump((int) t);
+
     
     if(bVerbose) profiler.printSummary();
     if(bVerbose) printf("**** Dumping done\n");
