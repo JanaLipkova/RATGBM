@@ -95,10 +95,7 @@ void Glioma_RAT_preprocessing::_ic(Grid<W,B>& grid, int pID)
 
   // for synthethic data
     double x1, x2;
-    const float alpha = 0.05;
-    int n = 0;      
-    const float ucT1 = 0.7;
-    const float ucT2 = 0.25;
+    const float alpha = 0.02;
 
     for(int i=0; i<vInfo.size(); i++)
     {
@@ -160,23 +157,26 @@ void Glioma_RAT_preprocessing::_ic(Grid<W,B>& grid, int pID)
                     else
                     {
                        
-	               // Box-Muller
-            	        if(  (n % 2) == 0 )
-                        {
-                           double u1 = drand48();
+                       if (PT1w > 0.01)
+                       {
+                          /*
+                          if(addedNoise)
+                          {
+                          // Box-Muller
+			   double u1 = drand48();
                            double u2 = drand48();
 
                            x1 = sqrt( - 2.0*log( u1 ) ) * cos( 2.0*M_PI*u2 );
                            x2 = sqrt( - 2.0*log( u1 ) ) * sin( 2.0*M_PI*u2 );
-                        }
+                           
+			   double ucT1 = max( 0., 0.7  + alpha * x1);
+                           double ucT2 = max( 0., 0.25 + alpha * x2);
+                           }*/
 
-                       if (PT1w > 0.)
-                       {
- 		           PT1w = max(0., PT1w + alpha * x1);
+                           double ucT1 = 0.7;
+                           double ucT2 = 0.25;
                            block(ix,iy,iz).t1bc = (PT1w >= ucT1) ? 1. : 0. ;  // T1w tumour segmentations
-                           block(ix,iy,iz).t2bc = (PT1w >= ucT2) ? 1. : 0. ;  // T2w tumour segmentations
-                           x1 = x2;
-                           n++;
+                           block(ix,iy,iz).t2bc = (PT2w >= ucT2) ? 1. : 0. ;  // T2w tumour segmentations
                        }
 			
 		   }

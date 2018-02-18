@@ -10,3 +10,4 @@ source/RATGBM_xcode/RATGBM_xcode
 source/makefile/RAT_UQ/
 source/Anatomy/
 source/makefile/brain
+source/Likelihood/makefile/likelihood

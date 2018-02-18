@@ -114,7 +114,7 @@ void HGG_Likelihood::run()
     sprintf(filename,"M_UQ_J09.dat");
     MatrixD3D model_J9(filename);
     
-    sprintf(filename,"M_UQ_J1.dat");
+    sprintf(filename,"M_UQ_J11.dat");
     MatrixD3D model_J11(filename);
 
     
