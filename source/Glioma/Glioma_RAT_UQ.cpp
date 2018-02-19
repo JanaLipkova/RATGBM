@@ -148,20 +148,33 @@ void Glioma_RAT_UQ::_ic_rat_point_tumor(Grid<W,B>& grid, int pID)
                     
                     double all = PGt + PWt + Pcsf;
                     
-                    if( (all >  0.)||(Pmask > 0.) )
+                    if( all >  0.1 )
                     {
                         Pcsf = ( Pcsf > 0.1 ) ? 1. : Pcsf;  // threasholding to ensure hemisphere separations
                         block(ix,iy,iz).p_csf = Pcsf;
-                        
-                        if(Pcsf  < 1.)
-                        {
-                            block(ix,iy,iz).p_w    = PWt  / (PWt + PGt);
-                            block(ix,iy,iz).p_g    = PGt  / (PWt + PGt);
-                        }
-                    }
+                         
+                      if(Pcsf  < 1.)
+                       {
+                            if(PWt > 0.5)
+                            {
+                                block(ix,iy,iz).p_w    = 1.;//  / (PWt + PGt);
+                                block(ix,iy,iz).p_g    = 0.;//  / (PWt + PGt);
+                           }
+                           else if (PGt > 0.5)
+                           {
+                                block(ix,iy,iz).p_w    = 0.;
+                                block(ix,iy,iz).p_g    = 1.;
+                           }
+                        }     
                     
+		   }
                     
-                    
+                   // fill the holes in the anatomy segmentations for the rats
+                   all = block(ix,iy,iz).p_csf + block(ix,iy,iz).p_w + block(ix,iy,iz).p_g;
+		   
+		   if( (Pmask > 0.1 )&&( all< 0.1 )  ) 
+                	block(ix,iy,iz).p_g = 1.;    
+ 		
                     /* tumor */
                     const Real p[3] = {x[0] - tumor_ic[0], x[1] - tumor_ic[1], x[2] - tumor_ic[2]};
                     const Real dist = sqrt(p[0]*p[0] + p[1]*p[1] + p[2]*p[2]);    // distance of curent voxel from tumor center

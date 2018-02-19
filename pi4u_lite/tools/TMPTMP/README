@@ -1,0 +1,36 @@
+===========================================
+	   GLIOMA TMCMC
+==========================================
+
+This folder must contain everything needed for the Glioma TMCMC Solver:
+
+DATA:
+  * T1w_D09.dat
+  * T2w_D09.dat
+  * T1w_D11.dat
+  * T2w_D11.dat
+  * Mask.dat
+
+FILES THAT WILL BE CREATED BY TMCMC
+ * HGG_TumorIC.bin
+ * HGG_InputParameters.txt 
+ * LikelihoodInput.txt  
+ * M_UQ_J09.dat (model output with TMCMC paramerers)
+ * M_UQ_J11.dat (model output
+
+BRAIN & LIKELIHOOD EXECUTABLE:
+ * brain 
+ * likelihood  
+
+TO RUN IT WHOLE:
+ * runAll.sh  
+
+OPTIONAL:
+README 
+
+------------------------------------------------
+   IMPORTANT REMEBER TO EXPORT RIGHT PATHS
+------------------------------------------------
+export PATH=$HOME/usr/torc/bin:$PATH
+export LD_LIBRARY_PATH=/cluster/home/mavt/lipkovaj/LIB/tbb40_20120613oss/build/linux_intel64_gcc_cc4.6.1_libc2.5_kernel2.6.18_release/:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/cluster/work/infk/cconti/VTK5.8_gcc/lib/vtk-5.8/:$LD_LIBRARY_PATH

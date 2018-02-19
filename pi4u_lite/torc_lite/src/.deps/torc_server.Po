@@ -1,0 +1,187 @@
+torc_server.o: torc_server.c ../include/torc_internal.h ../include/torc_config.h \
+ /usr/include/pthread.h /usr/include/features.h /usr/include/stdc-predef.h \
+ /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h /usr/include/gnu/stubs.h \
+ /usr/include/gnu/stubs-64.h /usr/include/endian.h /usr/include/bits/endian.h \
+ /usr/include/bits/byteswap.h /usr/include/bits/types.h \
+ /usr/include/bits/wordsize.h /usr/include/bits/typesizes.h \
+ /usr/include/bits/wordsize.h /usr/include/bits/byteswap-16.h \
+ /usr/include/sched.h \
+ /lrz/mnt/sys.x86_sles12/intel/studio2017_u4/compilers_and_libraries_2017.4.196/linux/compiler/include/stddef.h \
+ /usr/include/time.h /usr/include/bits/sched.h /usr/include/time.h \
+ /lrz/mnt/sys.x86_sles12/intel/studio2017_u4/compilers_and_libraries_2017.4.196/linux/compiler/include/stddef.h \
+ /usr/include/bits/time.h /usr/include/xlocale.h /usr/include/bits/pthreadtypes.h \
+ /usr/include/bits/wordsize.h /usr/include/bits/setjmp.h \
+ /usr/include/bits/wordsize.h /usr/include/bits/wordsize.h \
+ /lrz/sys/intel/studio2017_u4/impi/2017.3.196/intel64/include/mpi.h \
+ /lrz/mnt/sys.x86_sles12/intel/studio2017_u4/compilers_and_libraries_2017.4.196/linux/compiler/include/stdint.h \
+ /lrz/mnt/sys.x86_sles12/compilers/gcc/4.9.3/bin/../lib/gcc/x86_64-unknown-linux-gnu/4.9.3/include/stdint.h \
+ /usr/include/stdint.h /usr/include/bits/wchar.h /usr/include/bits/wordsize.h \
+ /lrz/sys/intel/studio2017_u4/impi/2017.3.196/intel64/include/mpio.h \
+ /lrz/sys/intel/studio2017_u4/impi/2017.3.196/intel64/include/mpi.h \
+ /usr/include/unistd.h /usr/include/bits/posix_opt.h \
+ /usr/include/bits/environments.h /usr/include/bits/wordsize.h \
+ /lrz/mnt/sys.x86_sles12/intel/studio2017_u4/compilers_and_libraries_2017.4.196/linux/compiler/include/stddef.h \
+ /usr/include/bits/confname.h /usr/include/getopt.h ../include/utils.h \
+ ../include/locks.h ../include/ps_config.h /usr/include/sys/types.h \
+ /lrz/mnt/sys.x86_sles12/intel/studio2017_u4/compilers_and_libraries_2017.4.196/linux/compiler/include/stddef.h \
+ /usr/include/sys/select.h /usr/include/bits/select.h \
+ /usr/include/bits/wordsize.h /usr/include/bits/sigset.h /usr/include/bits/time.h \
+ /usr/include/sys/sysmacros.h /usr/include/errno.h /usr/include/bits/errno.h \
+ /usr/include/linux/errno.h /usr/include/asm/errno.h \
+ /usr/include/asm-generic/errno.h /usr/include/asm-generic/errno-base.h \
+ ../include/queues.h ../include/torc_queue.h ../include/torc_data.h \
+ ../include/torc_mpi_internal.h ../include/torc.h /usr/include/stdio.h \
+ /lrz/mnt/sys.x86_sles12/intel/studio2017_u4/compilers_and_libraries_2017.4.196/linux/compiler/include/stddef.h \
+ /usr/include/libio.h /usr/include/_G_config.h \
+ /lrz/mnt/sys.x86_sles12/intel/studio2017_u4/compilers_and_libraries_2017.4.196/linux/compiler/include/stddef.h \
+ /usr/include/wchar.h \
+ /lrz/mnt/sys.x86_sles12/intel/studio2017_u4/compilers_and_libraries_2017.4.196/linux/compiler/include/stdarg.h \
+ /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h \
+ /usr/include/bits/stdio.h /usr/include/string.h \
+ /lrz/mnt/sys.x86_sles12/intel/studio2017_u4/compilers_and_libraries_2017.4.196/linux/compiler/include/stddef.h \
+ /usr/include/bits/string.h /usr/include/bits/string2.h /usr/include/stdlib.h \
+ /lrz/mnt/sys.x86_sles12/intel/studio2017_u4/compilers_and_libraries_2017.4.196/linux/compiler/include/stddef.h \
+ /usr/include/bits/waitflags.h /usr/include/bits/waitstatus.h \
+ /usr/include/alloca.h \
+ /lrz/mnt/sys.x86_sles12/intel/studio2017_u4/compilers_and_libraries_2017.4.196/linux/compiler/include/stddef.h \
+ /usr/include/bits/stdlib-bsearch.h /usr/include/bits/stdlib-float.h
+
+../include/torc_internal.h:
+
+../include/torc_config.h:
+
+/usr/include/pthread.h:
+
+/usr/include/features.h:
+
+/usr/include/stdc-predef.h:
+
+/usr/include/sys/cdefs.h:
+
+/usr/include/bits/wordsize.h:
+
+/usr/include/gnu/stubs.h:
+
+/usr/include/gnu/stubs-64.h:
+
+/usr/include/endian.h:
+
+/usr/include/bits/endian.h:
+
+/usr/include/bits/byteswap.h:
+
+/usr/include/bits/types.h:
+
+/usr/include/bits/typesizes.h:
+
+/usr/include/bits/byteswap-16.h:
+
+/usr/include/sched.h:
+
+/lrz/mnt/sys.x86_sles12/intel/studio2017_u4/compilers_and_libraries_2017.4.196/linux/compiler/include/stddef.h:
+
+/usr/include/time.h:
+
+/usr/include/bits/sched.h:
+
+/usr/include/bits/time.h:
+
+/usr/include/xlocale.h:
+
+/usr/include/bits/pthreadtypes.h:
+
+/usr/include/bits/setjmp.h:
+
+/lrz/sys/intel/studio2017_u4/impi/2017.3.196/intel64/include/mpi.h:
+
+/lrz/mnt/sys.x86_sles12/intel/studio2017_u4/compilers_and_libraries_2017.4.196/linux/compiler/include/stdint.h:
+
+/lrz/mnt/sys.x86_sles12/compilers/gcc/4.9.3/bin/../lib/gcc/x86_64-unknown-linux-gnu/4.9.3/include/stdint.h:
+
+/usr/include/stdint.h:
+
+/usr/include/bits/wchar.h:
+
+/lrz/sys/intel/studio2017_u4/impi/2017.3.196/intel64/include/mpio.h:
+
+/usr/include/unistd.h:
+
+/usr/include/bits/posix_opt.h:
+
+/usr/include/bits/environments.h:
+
+/usr/include/bits/confname.h:
+
+/usr/include/getopt.h:
+
+../include/utils.h:
+
+../include/locks.h:
+
+../include/ps_config.h:
+
+/usr/include/sys/types.h:
+
+/usr/include/sys/select.h:
+
+/usr/include/bits/select.h:
+
+/usr/include/bits/sigset.h:
+
+/usr/include/sys/sysmacros.h:
+
+/usr/include/errno.h:
+
+/usr/include/bits/errno.h:
+
+/usr/include/linux/errno.h:
+
+/usr/include/asm/errno.h:
+
+/usr/include/asm-generic/errno.h:
+
+/usr/include/asm-generic/errno-base.h:
+
+../include/queues.h:
+
+../include/torc_queue.h:
+
+../include/torc_data.h:
+
+../include/torc_mpi_internal.h:
+
+../include/torc.h:
+
+/usr/include/stdio.h:
+
+/usr/include/libio.h:
+
+/usr/include/_G_config.h:
+
+/usr/include/wchar.h:
+
+/lrz/mnt/sys.x86_sles12/intel/studio2017_u4/compilers_and_libraries_2017.4.196/linux/compiler/include/stdarg.h:
+
+/usr/include/bits/stdio_lim.h:
+
+/usr/include/bits/sys_errlist.h:
+
+/usr/include/bits/stdio.h:
+
+/usr/include/string.h:
+
+/usr/include/bits/string.h:
+
+/usr/include/bits/string2.h:
+
+/usr/include/stdlib.h:
+
+/usr/include/bits/waitflags.h:
+
+/usr/include/bits/waitstatus.h:
+
+/usr/include/alloca.h:
+
+/usr/include/bits/stdlib-bsearch.h:
+
+/usr/include/bits/stdlib-float.h:

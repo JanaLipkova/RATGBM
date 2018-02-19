@@ -1,0 +1,1 @@
+echo -I/home/hpc/txh01/di49zin/usr/torc/include -D_REENTRANT

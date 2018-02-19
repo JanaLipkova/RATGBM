@@ -137,17 +137,31 @@ void Glioma_RAT_preprocessing::_ic(Grid<W,B>& grid, int pID)
                     
                     double all = PGt + PWt + Pcsf;
                     
-                    if( (all > 0.) || (Pmask > 0.) )
+                    if( all > 0.1 )
                     {
                         Pcsf = ( Pcsf > 0.1 ) ? 1. : Pcsf;  // threasholding to ensure hemisphere separations
                         block(ix,iy,iz).p_csf = Pcsf;
                         
                         if(Pcsf  < 1.)
                         {
-                            block(ix,iy,iz).p_w    = PWt  / (PWt + PGt);
-                            block(ix,iy,iz).p_g    = PGt  / (PWt + PGt);
-                        }
+                            if(PWt > 0.5)
+                            {
+                            	block(ix,iy,iz).p_w    = 1.;//  / (PWt + PGt);
+                            	block(ix,iy,iz).p_g    = 0.;//  / (PWt + PGt);
+                           }
+                           else if (PGt > 0.5)
+                           {
+   				block(ix,iy,iz).p_w    = 0.;
+				block(ix,iy,iz).p_g    = 1.;
+                           }
+			}
                     }
+
+                    // fill the holes in the anatomy segmentations for the rats
+                    all = block(ix,iy,iz).p_csf + block(ix,iy,iz).p_w + block(ix,iy,iz).p_g;
+		    if( (Pmask > 0.1 )&&( all< 0.1 )  )
+                        block(ix,iy,iz).p_g = 1.;
+
                     
                     if(pID > 0)
                     {   
