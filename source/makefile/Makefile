@@ -12,6 +12,12 @@ CPPFLAGS += -D LRZ_CLUSTER
 include make.lrz
 endif
 
+ifneq "$(findstring anslab,$(shell hostname))" ""
+CPPFLAGS += -D ANSLAB
+include make.anslab
+endif
+
+
 ifeq "$(helmholtz)" "hypre"
 	CPPFLAGS += -D_MULTIGRID_
 endif
@@ -110,11 +116,6 @@ VPATH := ../Glioma/ ../MRAGcore/
 #HGG PART
 OBJECTS = \
 Glioma_main.o \
-Glioma_HG_UQ.o\
-Glioma_ProcessSyntheticData.o\
-Glioma_HG_ProcessPatientData.o\
-Glioma_HG_Propagation.o\
-Glioma_HG_Visualizations.o\
 Glioma_dat2VP.o\
 Glioma_RAT_UQ.o\
 Glioma_RAT_preprocessing.o\

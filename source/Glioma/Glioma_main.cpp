@@ -8,11 +8,11 @@
 
 
 // Brain stuffs
-#include "Glioma_HG_UQ.h"
-#include "Glioma_ProcessSyntheticData.h"
-#include "Glioma_HG_ProcessPatientData.h"
-#include "Glioma_HG_Propagation.h"
-#include "Glioma_HG_Visualizations.h"
+//#include "Glioma_HG_UQ.h"
+//#include "Glioma_ProcessSyntheticData.h"
+//#include "Glioma_HG_ProcessPatientData.h"
+//#include "Glioma_HG_Propagation.h"
+//#include "Glioma_HG_Visualizations.h"
 //#include "Glioma_HG_UQ_MALA.h"
 //#include "Glioma_HG_Recurrance.h"
 
@@ -56,20 +56,20 @@ int main(int argc,const char ** argv)
 	
 	printf("INPUT IS %s\n", parser("-anatomy").asString().data());
 	
-      if(parser("-anatomy").asString() == "HGG_UQ")
-      s = new Glioma_HG_UQ(argc, (const char **)argv);
+//      if(parser("-anatomy").asString() == "HGG_UQ")
+//      s = new Glioma_HG_UQ(argc, (const char **)argv);
 //      else if(parser("-anatomy").asString() == "HGG_UQ_MALA")
 //          s = new Glioma_HG_UQ_MALA(argc, (const char **)argv);
 //      else if(parser("-anatomy").asString() == "recurrence")
 //          s = new Glioma_HG_Recurrance(argc, (const char **)argv);
-      else if(parser("-anatomy").asString() == "syntheticData")
-      s = new Glioma_ProcessSyntheticData(argc, (const char **)argv);
-      else if(parser("-anatomy").asString() == "patientData")
-      s = new Glioma_HG_ProcessPatientData(argc, (const char **)argv);
-      else if(parser("-anatomy").asString() == "propagation")
-          s = new Glioma_HG_Propagation(argc, (const char **)argv);
-      else if(parser("-anatomy").asString() == "visualization")
-          s = new Glioma_HG_Visualizations(argc, (const char **)argv);
+//      else if(parser("-anatomy").asString() == "syntheticData")
+//      s = new Glioma_ProcessSyntheticData(argc, (const char **)argv);
+//      else if(parser("-anatomy").asString() == "patientData")
+//      s = new Glioma_HG_ProcessPatientData(argc, (const char **)argv);
+//      else if(parser("-anatomy").asString() == "propagation")
+//          s = new Glioma_HG_Propagation(argc, (const char **)argv);
+//      else if(parser("-anatomy").asString() == "visualization")
+//          s = new Glioma_HG_Visualizations(argc, (const char **)argv);
 //      else if(parser("-anatomy").asString() == "simpleBone")
 //          s = new Glioma_Bone_UQ(argc, (const char **)argv);
 //      else if(parser("-anatomy").asString() == "bmdBone")
@@ -82,7 +82,7 @@ int main(int argc,const char ** argv)
 //          s = new Glioma_Necrosis(argc, (const char **)argv);
 //      else if(parser("-anatomy").asString() == "addMargin")
 //          s = new Glioma_HG_AddUniformMargin(argc, (const char **)argv);
-      else if(parser("-anatomy").asString() == "VPvisualisation")
+      if(parser("-anatomy").asString() == "VPvisualisation")
           s = new Glioma_dat2VP(argc, (const char **)argv);
       else if(parser("-anatomy").asString() == "rat")
           s = new Glioma_RAT_UQ(argc, (const char **)argv);

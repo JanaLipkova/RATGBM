@@ -1,0 +1,30 @@
+#--------------------
+# Set up compilers:
+#--------------------
+CC = g++ -O3 -Wno-deprecated
+OPENMP_FLAG= -fopenmp -fpermissive
+
+#--------------------
+# Set up libraries:
+#--------------------
+MYBASE=/home/baldesi
+
+TBB_INC_DIR=/home/baldesi/Glioma/lib/tbb40_20120613oss/include
+TBB_LIB_DIR=/home/baldesi/Glioma/lib/tbb40_20120613oss/build/linux_intel64_gcc_cc4.6.1_libc2.5_kernel2.6.18_release
+
+VTK_INC_DIR=${MYBASE}/Glioma/lib/myVTK/include/vtk-5.4
+VTK_LIB_DIR=${MYBASE}/Glioma/lib/myVTK/lib/vtk-5.4
+
+# LRZ libraries in /lrz/sys/libraries
+BOOST_INC_DIR=${MYBASE}/ssm-libs/boost_1_63_0/include/
+BOOST_LIB_DIR=${MYBASE}//ssm-libs/boost_1_63_0/lib/
+
+GSL_INC_DIR=/usr/include
+GSL_LIB_DIR=/usr/lib
+
+export LD_LIBRARY_PATH:=$(VTK_LIB_DIR):$(LD_LIBRARY_PATH)
+export LD_LIBRARY_PATH:=$(TBB_LIB_DIR):$(LD_LIBRARY_PATH)
+export LD_LIBRARY_PATH:=$(BOOST_LIB_DIR):$(LD_LIBRARY_PATH)
+export LD_LIBRARY_PATH:=$(GSL_LIB_DIR):$(LD_LIBRARY_PATH)
+
+CPPFLAGS+= -I$(TBB_INC_DIR) -I$(VTK_INC_DIR) -I..
