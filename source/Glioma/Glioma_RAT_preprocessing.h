@@ -34,6 +34,8 @@ private:
     
     static void _ic(Grid<W,B>& grid, int pID);
     void        _computeTumourProperties(bool bDumbIC2file);
+    void        _computeEnclosingSphere(Grid<W,B>& grid);
+    void        _readInTumorPosition(vector<Real>& tumorIC );
     void		_dump(int counter);
     void        _dump2binary(int day);
     void        _readInTumourSegmentation(Grid<W,B>& grid, int pID, int day);

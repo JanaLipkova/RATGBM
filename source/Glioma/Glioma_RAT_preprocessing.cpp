@@ -71,11 +71,6 @@ void Glioma_RAT_preprocessing::_ic(Grid<W,B>& grid, int pID)
     MatrixD3D CSF(anatomy);
     sprintf(anatomy, "%s_mask.dat", patientFolder);
     MatrixD3D MASK(anatomy);
-    sprintf(anatomy, "%sJ09-T2w-iso-crop.dat", patientFolder);
-    MatrixD3D T2w(anatomy);
-    sprintf(anatomy, "%sJ09-DCE-iso-crop.dat", patientFolder);
-    MatrixD3D T1w(anatomy);
-    
     
     int brainSizeX = (int) GM.getSizeX();
     int brainSizeY = (int) GM.getSizeY();
@@ -130,8 +125,6 @@ void Glioma_RAT_preprocessing::_ic(Grid<W,B>& grid, int pID)
                         PGt   =  GM(mappedBrainX,mappedBrainY,mappedBrainZ);
                         PWt   =  WM(mappedBrainX,mappedBrainY,mappedBrainZ);
                         Pcsf  =  CSF(mappedBrainX,mappedBrainY,mappedBrainZ);
-                        PT2w  =  T2w(mappedBrainX,mappedBrainY,mappedBrainZ);
-                        PT1w  =  T1w(mappedBrainX,mappedBrainY,mappedBrainZ);
                         Pmask =  MASK(mappedBrainX,mappedBrainY,mappedBrainZ);
                     }
                     
@@ -146,55 +139,22 @@ void Glioma_RAT_preprocessing::_ic(Grid<W,B>& grid, int pID)
                         {
                             if(PWt > 0.5)
                             {
-                            	block(ix,iy,iz).p_w    = 1.;//  / (PWt + PGt);
-                            	block(ix,iy,iz).p_g    = 0.;//  / (PWt + PGt);
-                           }
-                           else if (PGt > 0.5)
-                           {
-   				block(ix,iy,iz).p_w    = 0.;
-				block(ix,iy,iz).p_g    = 1.;
-                           }
-			}
+                                block(ix,iy,iz).p_w    = 1.;//  / (PWt + PGt);
+                                block(ix,iy,iz).p_g    = 0.;//  / (PWt + PGt);
+                            }
+                            else if (PGt > 0.5)
+                            {
+                                block(ix,iy,iz).p_w    = 0.;
+                                block(ix,iy,iz).p_g    = 1.;
+                            }
+                        }
                     }
-
+                    
                     // fill the holes in the anatomy segmentations for the rats
                     all = block(ix,iy,iz).p_csf + block(ix,iy,iz).p_w + block(ix,iy,iz).p_g;
-		    if( (Pmask > 0.1 )&&( all< 0.1 )  )
+                    if( (Pmask > 0.1 )&&( all< 0.1 )  )
                         block(ix,iy,iz).p_g = 1.;
-
-                    
-                    if(pID > 0)
-                    {   
-                        block(ix,iy,iz).t1bc = (PT1w > 0.01) ? 1. : 0. ;  // T1w tumour segmentations
-                        block(ix,iy,iz).t2bc = (PT2w > 0.01) ? 1. : 0.;   // T2w tumour segmentations
-                    }
-                    else
-                    {
-                       
-                       if (PT1w > 0.01)
-                       {
-                          /*
-                          if(addedNoise)
-                          {
-                          // Box-Muller
-			   double u1 = drand48();
-                           double u2 = drand48();
-
-                           x1 = sqrt( - 2.0*log( u1 ) ) * cos( 2.0*M_PI*u2 );
-                           x2 = sqrt( - 2.0*log( u1 ) ) * sin( 2.0*M_PI*u2 );
-                           
-			   double ucT1 = max( 0., 0.7  + alpha * x1);
-                           double ucT2 = max( 0., 0.25 + alpha * x2);
-                           }*/
-
-                           double ucT1 = 0.7;
-                           double ucT2 = 0.25;
-                           block(ix,iy,iz).t1bc = (PT1w >= ucT1) ? 1. : 0. ;  // T1w tumour segmentations
-                           block(ix,iy,iz).t2bc = (PT2w >= ucT2) ? 1. : 0. ;  // T2w tumour segmentations
-                       }
-			
-		   }
-                    
+            
                     block(ix,iy,iz).chi = Pmask;
                     
                 }
@@ -277,7 +237,68 @@ void Glioma_RAT_preprocessing::_computeTumourProperties(bool bDumbIC2file)
         pFile = fopen ("HGG_TumorIC.bin", "wb");
         fwrite (buffer , sizeof(float), sizeof(buffer), pFile);
         fclose (pFile);
+        
     }
+}
+
+
+void Glioma_RAT_preprocessing:: _computeEnclosingSphere(Grid<W,B>& grid)
+{
+    vector<Real> tumor_ic(3);
+    _readInTumorPosition(tumor_ic);
+    
+    vector<BlockInfo> vInfo = grid.getBlocksInfo();
+    const Real tumourRadius = 0.25;
+    
+    for(int i=0; i<vInfo.size(); i++)
+    {
+        BlockInfo& info = vInfo[i];
+        B& block = grid.getBlockCollection()[info.blockID];
+        
+        for(int iz=0; iz<B::sizeZ; iz++)
+            for(int iy=0; iy<B::sizeY; iy++)
+                for(int ix=0; ix<B::sizeX; ix++)
+                {
+                    double x[3];
+                    info.pos(x, ix, iy, iz);
+                
+                    const Real p[3] = {x[0] - tumor_ic[0], x[1] - tumor_ic[1], x[2] - tumor_ic[2]};
+                    const Real dist = sqrt(p[0]*p[0] + p[1]*p[1] + p[2]*p[2]);
+                    Real inside = (dist < tumourRadius) ? 1. : 0.;
+                    block(ix,iy,iz).chi = block(ix,iy,iz).chi * inside;
+                }
+    }
+}
+
+void Glioma_RAT_preprocessing::_readInTumorPosition(vector<Real>& tumorIC )
+{
+    typedef float dataType;
+    
+    FILE* fp;
+    fp = fopen("HGG_TumorIC.bin", "rb");
+    if (fp == NULL) {fputs ("File error", stderr); exit (1);}
+    
+    // obtain file size
+    fseek (fp , 0 , SEEK_END);
+    long int size = ftell (fp);
+    rewind (fp);
+    
+    // allocate memory to contain the whole file:
+    dataType * buffer;
+    buffer = (dataType*) malloc (sizeof(dataType)*size);
+    if (buffer == NULL) {fputs ("Memory error",stderr); exit (2);}
+    
+    // copy the file into the buffer:
+    size_t result;
+    result = fread (buffer, 1, size, fp);
+    if (result != size) {fputs ("Reading error",stderr); exit (3);}
+    
+    for (int i = 0; i < _DIM; ++i)
+        tumorIC[i] = (Real)buffer[i];
+    
+    
+    free(buffer);
+    fclose (fp);
 }
 
 
@@ -488,7 +509,7 @@ void Glioma_RAT_preprocessing::_dump2binary(int day)
     sprintf(filename,"T2w_D%02d.dat",day);
     tumorT2.dump(filename);
     
-    sprintf(filename,"Mask.dat");
+    sprintf(filename,"Sphere.dat");
     brainMask.dump(filename);
     
 }
@@ -513,7 +534,9 @@ void Glioma_RAT_preprocessing::run()
         if(*it == 9)
         {
             bDumbIC2file = 1;
+            _readInTumourSegmentation(*grid, pID, *it);
             _computeTumourProperties(bDumbIC2file);  // compute center of mass and tumour volume
+            _computeEnclosingSphere(*grid);
             _dump(*it);
             _dump2binary(*it);
         }

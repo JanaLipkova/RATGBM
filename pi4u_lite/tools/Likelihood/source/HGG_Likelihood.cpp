@@ -41,18 +41,18 @@ long double HGG_Likelihood::_computeTiLogLikelihood(MatrixD3D model, int day, in
     int dataY = data.getSizeY();
     int dataZ = data.getSizeZ();
     
-    MatrixD3D mask("Mask.dat");
+    MatrixD3D mask("Sphere.dat");
     int Npoints = 0;
     
     long int N = dataX*dataY*dataZ;
     assert(N == model.getSizeX() * model.getSizeY() * model.getSizeZ() );
     
     long double sum = 0.;
-    int cor_leng = 6;
+    int cor_leng = 4;
     
     for (int iz = 0; iz < dataZ; iz=iz+cor_leng )
-        for (int iy = 0; iy < dataY; iy=iy+2)
-            for (int ix = 0; ix < dataX; ix=ix+2)
+        for (int iy = 0; iy < dataY; iy++)
+            for (int ix = 0; ix < dataX; ix++)
             {
                 if(mask(ix,iy,iz) > 0.01)
                 {
