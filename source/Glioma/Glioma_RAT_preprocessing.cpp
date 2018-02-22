@@ -248,7 +248,7 @@ void Glioma_RAT_preprocessing:: _computeEnclosingSphere(Grid<W,B>& grid)
     _readInTumorPosition(tumor_ic);
     
     vector<BlockInfo> vInfo = grid.getBlocksInfo();
-    const Real tumourRadius = 0.25;
+    const Real tumourRadius = 0.2;//0.25;
     
     for(int i=0; i<vInfo.size(); i++)
     {
