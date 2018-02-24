@@ -386,7 +386,7 @@ void Glioma_RAT_UQ:: _readInTumourFromFile(Grid<W,B>& grid, int pID, Real scale)
 #ifdef LRZ_CLUSTER
     sprintf(dataFolder,"/home/hpc/txh01/di49zin/GliomaAdvance/RATGBM/source/Anatomy/F98/");
 #else
-    sprintf(dataFolder,"../../Anatmoy/");
+   sprintf(dataFolder,"/home/baldesi/Glioma/RATGBM/source/Anatomy/F98/");
 #endif
     
     sprintf(patientFolder, "%sM%02d/M%02d_TumourIC.dat",dataFolder,pID,pID);
