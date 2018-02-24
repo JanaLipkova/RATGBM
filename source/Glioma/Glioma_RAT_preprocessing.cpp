@@ -328,10 +328,8 @@ void Glioma_RAT_preprocessing:: _readInTumourSegmentation(Grid<W,B>& grid, int p
     
     int brainSizeX = (int) T2w.getSizeX();
     int brainSizeY = (int) T2w.getSizeY();
-    int brainSizeZ = (int) T2w.getSizeZ();
-    
+    int brainSizeZ = (int) T2w.getSizeZ(); 
     int brainSizeMax = max(brainSizeX, max(brainSizeY,brainSizeZ));
-    L    = brainSizeMax * 0.117;   // voxel spacing 117 µm, convert to mm -> L ~ 14 mm
     
     std::cout<<"brainSizeX="<<brainSizeX<<" brainSizeY="<<brainSizeY<<" brainSizeZ="<<brainSizeZ<<std::endl;
     std::cout<<"L="<<L<<std::endl;
