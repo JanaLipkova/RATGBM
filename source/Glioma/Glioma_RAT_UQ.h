@@ -34,10 +34,15 @@ private:
     bool                                    bVerbose;
     int                                     pID;
     int                                     ICtype;
+    Real                                    Dg, Dw, rho, scale;
+
     
     
     static void _ic_rat_point_tumor(Grid<W,B>& grid, int pID);
     static void _readInTumorPosition(vector<Real>& tumorIC);
+    
+    static void _ic_anatomy(Grid<W,B>& grid, int pID);
+    static void _readInTumourFromFile(Grid<W,B>& grid, int pID, Real scale);
     
     void        _reactionDiffusionStep(BoundaryInfo* boundaryInfo, const int nParallelGranularity, const Real Dw, const Real Dg, const Real rho, double dt);
     void        _reactionDiffusionNecrosisStep(BoundaryInfo* boundaryInfo, const int nParallelGranularity, const Real Dw, const Real Dg, const Real rho, double dt, const Real gamma);

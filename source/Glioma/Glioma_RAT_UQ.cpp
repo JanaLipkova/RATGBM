@@ -31,8 +31,40 @@ Glioma_RAT_UQ::Glioma_RAT_UQ(int argc, const char ** argv): parser(argc, argv)
     stSorter.connect(*grid);
     
     bAdaptivity = parser("-adaptive").asBool();
-    pID =  parser("-pID").asInt();
-    _ic_rat_point_tumor(*grid, pID);
+    pID         = parser("-pID").asInt();
+    ICtype      = parser("-ICtype").asInt(0.);
+    
+    
+    ifstream mydata("HGG_InputParameters.txt");
+    Real Dg, Dw, rho, scale;
+    
+    if (mydata.is_open())
+    {
+        mydata >> Dw;
+        mydata >> rho;
+        mydata >> scale;
+        mydata.close();
+    }
+    
+    
+    switch (ICtype) {
+        case 0:
+        {
+            _ic_rat_point_tumor(*grid, pID);
+        }
+            break;
+            
+        case 1:
+        {
+            _ic_anatomy(*grid, pID);
+            _readInTumourFromFile(*grid, pID, scale);
+
+        }
+            break;
+            
+        default:
+            break;
+    }
 
     
     if(parser("-bDumpIC").asBool(1))
@@ -230,6 +262,192 @@ void Glioma_RAT_UQ::_readInTumorPosition(vector<Real>& tumorIC )
 }
 
 
+
+void Glioma_RAT_UQ::_ic_anatomy(Grid<W,B>& grid, int pID)
+{
+    char dataFolder   [200];
+    char patientFolder[200];
+    char anatomy      [200];
+    
+#ifdef LRZ_CLUSTER
+    sprintf(dataFolder,"/home/hpc/txh01/di49zin/GliomaAdvance/RATGBM/source/Anatomy/F98/");
+#else
+    sprintf(dataFolder,"/home/baldesi/Glioma/RATGBM/source/Anatomy/F98/");
+#endif
+    
+    sprintf(patientFolder, "%sM%02d/M%02d",dataFolder,pID,pID);
+    printf("Reading anatomy from: %s \n", patientFolder);
+    
+    sprintf(anatomy, "%s_gm.dat", patientFolder);
+    MatrixD3D GM(anatomy);
+    sprintf(anatomy, "%s_wm.dat", patientFolder);
+    MatrixD3D WM(anatomy);
+    sprintf(anatomy, "%s_csf.dat", patientFolder);
+    MatrixD3D CSF(anatomy);
+    sprintf(anatomy, "%s_mask.dat", patientFolder);
+    MatrixD3D MASK(anatomy);
+    
+    int brainSizeX = (int) GM.getSizeX();
+    int brainSizeY = (int) GM.getSizeY();
+    int brainSizeZ = (int) GM.getSizeZ();
+    
+    int brainSizeMax = max(brainSizeX, max(brainSizeY,brainSizeZ));
+    L    = brainSizeMax * 0.117;   // voxel spacing 117 µm, convert to mm -> L ~ 14 mm
+    
+    std::cout<<"brainSizeX="<<brainSizeX<<" brainSizeY="<<brainSizeY<<" brainSizeZ="<<brainSizeZ<<std::endl;
+    std::cout<<"L="<<L<<std::endl;
+    
+    double brainHx = 1.0 / ((double)(brainSizeMax)); // should be w.r.t. longest dimension for correct aspect ratio
+    double brainHy = 1.0 / ((double)(brainSizeMax)); // should be w.r.t. longest dimension for correct aspect ratio
+    double brainHz = 1.0 / ((double)(brainSizeMax)); // should be w.r.t. longest dimension for correct aspect ratio
+    
+
+    vector<BlockInfo> vInfo = grid.getBlocksInfo();
+    
+    for(int i=0; i<vInfo.size(); i++)
+    {
+        BlockInfo& info = vInfo[i];
+        B& block = grid.getBlockCollection()[info.blockID];
+        
+        for(int iz=0; iz<B::sizeZ; iz++)
+            for(int iy=0; iy<B::sizeY; iy++)
+                for(int ix=0; ix<B::sizeX; ix++)
+                {
+                    double x[3];
+                    info.pos(x, ix, iy, iz);
+                    
+                    /* Anatomy */
+                    int mappedBrainX = (int)round( x[0] / brainHx  );
+                    int mappedBrainY = (int)round( x[1] / brainHy  );
+                    int mappedBrainZ = (int)round( x[2] / brainHz  );
+                    
+                    
+                    Real PGt, PWt, Pcsf, Pmask;
+                    
+                    if ( (mappedBrainX < 0 || mappedBrainX >= brainSizeX) || (mappedBrainY < 0 || mappedBrainY >= brainSizeY) || (mappedBrainZ < 0 || mappedBrainZ >= brainSizeZ) )                    {
+                        PGt   = 0.;
+                        PWt   = 0.;
+                        Pcsf  = 0.;
+                        Pmask = 0.;
+                    }
+                    else
+                    {
+                        PGt  =  GM(mappedBrainX,mappedBrainY,mappedBrainZ);
+                        PWt  =  WM(mappedBrainX,mappedBrainY,mappedBrainZ);
+                        Pcsf =  CSF(mappedBrainX,mappedBrainY,mappedBrainZ);
+                        Pmask = MASK(mappedBrainX,mappedBrainY,mappedBrainZ);
+                    }
+                    
+                    double all = PGt + PWt + Pcsf;
+                    
+                    if( all >  0.1 )
+                    {
+                        Pcsf = ( Pcsf > 0.1 ) ? 1. : Pcsf;  // threasholding to ensure hemisphere separations
+                        block(ix,iy,iz).p_csf = Pcsf;
+                        
+                        if(Pcsf  < 1.)
+                        {
+                            if(PWt > 0.5)
+                            {
+                                block(ix,iy,iz).p_w    = 1.;//  / (PWt + PGt);
+                                block(ix,iy,iz).p_g    = 0.;//  / (PWt + PGt);
+                            }
+                            else if (PGt > 0.5)
+                            {
+                                block(ix,iy,iz).p_w    = 0.;
+                                block(ix,iy,iz).p_g    = 1.;
+                            }
+                        }
+                        
+                    }
+                    
+                    // fill the holes in the anatomy segmentations for the rats
+                    all = block(ix,iy,iz).p_csf + block(ix,iy,iz).p_w + block(ix,iy,iz).p_g;
+                    
+                    if( (Pmask > 0.1 )&&( all< 0.1 )  )
+                        block(ix,iy,iz).p_g = 1.;
+                    
+                    block(ix,iy,iz).chi = Pmask;
+                }
+        
+        grid.getBlockCollection().release(info.blockID);
+        
+    }
+}
+
+
+
+
+void Glioma_RAT_UQ:: _readInTumourFromFile(Grid<W,B>& grid, int pID, Real scale)
+{
+    char dataFolder   [200];
+    char patientFolder[200];
+    
+#ifdef LRZ_CLUSTER
+    sprintf(dataFolder,"/home/hpc/txh01/di49zin/GliomaAdvance/RATGBM/source/Anatomy/F98/");
+#else
+    sprintf(dataFolder,"../../Anatmoy/");
+#endif
+    
+    sprintf(patientFolder, "%sM%02d/M%02d_TumourIC.dat",dataFolder,pID,pID);
+    MatrixD3D Tumor(patientFolder);
+    
+    
+    int brainSizeX = (int) Tumor.getSizeX();
+    int brainSizeY = (int) Tumor.getSizeY();
+    int brainSizeZ = (int) Tumor.getSizeZ();
+    
+    int brainSizeMax = max(brainSizeX, max(brainSizeY,brainSizeZ));
+    std::cout<<"brainSizeX="<<brainSizeX<<" brainSizeY="<<brainSizeY<<" brainSizeZ="<<brainSizeZ<<std::endl;
+    
+    double brainHx = 1.0 / ((double)(brainSizeMax)); // should be w.r.t. longest dimension for correct aspect ratio
+    double brainHy = 1.0 / ((double)(brainSizeMax)); // should be w.r.t. longest dimension for correct aspect ratio
+    double brainHz = 1.0 / ((double)(brainSizeMax)); // should be w.r.t. longest dimension for correct aspect ratio
+    
+    vector<BlockInfo> vInfo = grid.getBlocksInfo();
+    
+    for(int i=0; i<vInfo.size(); i++)
+    {
+        BlockInfo& info = vInfo[i];
+        B& block = grid.getBlockCollection()[info.blockID];
+        
+        for(int iz=0; iz<B::sizeZ; iz++)
+            for(int iy=0; iy<B::sizeY; iy++)
+                for(int ix=0; ix<B::sizeX; ix++)
+                {
+                    double x[3];
+                    info.pos(x, ix, iy, iz);
+                    
+                    /* Anatomy */
+                    int mappedBrainX = (int)round( x[0] / brainHx  );
+                    int mappedBrainY = (int)round( x[1] / brainHy  );
+                    int mappedBrainZ = (int)round( x[2] / brainHz  );
+                    
+                    
+                    Real tumourIC;
+                    
+                    if ( (mappedBrainX < 0 || mappedBrainX >= brainSizeX) || (mappedBrainY < 0 || mappedBrainY >= brainSizeY) || (mappedBrainZ < 0 || mappedBrainZ >= brainSizeZ) )
+                    {
+                        tumourIC  = 0.;
+                    }
+                    else
+                    {
+                        tumourIC  =  Tumor(mappedBrainX,mappedBrainY,mappedBrainZ);
+                    }
+                    
+                    
+                    block(ix,iy,iz).phi = tumourIC * scale;
+                    
+                }
+        
+        grid.getBlockCollection().release(info.blockID);
+        
+    }
+}
+
+
+
+
 #pragma mark ReactionDiffusion
 void Glioma_RAT_UQ::_reactionDiffusionStep(BoundaryInfo* boundaryInfo, const int nParallelGranularity, const Real Dw, const Real Dg, const Real rho, double dt)
 {
@@ -361,23 +579,19 @@ void Glioma_RAT_UQ::run()
     const int nParallelGranularity	= (grid->getBlocksInfo().size()<=8 ? 1 : 4);
     BoundaryInfo* boundaryInfo		= &grid->getBoundaryInfo();
     
-    /* read in case specific parameters*/
-    ifstream mydata("HGG_InputParameters.txt");
-    Real Dg, Dw, rho;
-    double tend = parser("-Tend").asDouble(11.);
-    
-    if (mydata.is_open())
-    {
-        mydata >> Dw;
-        mydata >> rho;
-        mydata.close();
-    }
-
-    
+    /* scale to characteristic units */
     Real Dscale = 1./parser("-Dscale").asDouble();
     Dw = Dw/(L*L);  // rescale w.r.t. to characeteristic length
     Dg = Dscale*Dw;
     
+
+    /* simulation set up */
+    double tend         = parser("-Tend").asDouble(11.);
+    double t            = 0;
+    int iCounter        = 1;
+    double h            = 1./(blockSize*blocksPerDimension);
+    double dt           = 0.95 * h*h / ( 2.* _DIM * max(Dw, Dg) );
+    if(bVerbose)  printf("Dg=%e, Dw=%e, dt= %f, rho=%f , h=%f\n", Dg, Dw, dt, rho,h);
     
     /* set times of MRI scans */
     vector<int> timeOfscan ;
@@ -388,13 +602,14 @@ void Glioma_RAT_UQ::run()
     std::vector<int>::iterator it = timeOfscan.begin();
     whenToWrite = *it;
     
+    // since inpute file contains tumour at day 9, save just day 11
+    if(ICtype == 1)
+    {
+        t = 9;
+        ++it;
+        whenToWrite = *it;
+    }
     
-    /* simulation set up */
-    double t			= 0.0;
-    int iCounter        = 1;
-    double h            = 1./(blockSize*blocksPerDimension);
-    double dt           = 0.95 * h*h / ( 2.* _DIM * max(Dw, Dg) );
-    if(bVerbose)  printf("Dg=%e, Dw=%e, dt= %f, rho=%f , h=%f\n", Dg, Dw, dt, rho,h);
     
     /* initial refinement & compression */
     if( (whenToRefine > 0.) && (bAdaptivity) )
@@ -402,8 +617,6 @@ void Glioma_RAT_UQ::run()
         Science::AutomaticRefinement<0,0>(*grid, blockfwt, refinement_tolerance, maxLevel, 1, &profiler);
         Science::AutomaticCompression<0,0>(*grid, blockfwt, compression_tolerance, -1, &profiler);
     }
-    
-    
     
     while (t <= tend)
     {
@@ -437,9 +650,6 @@ void Glioma_RAT_UQ::run()
     // Refine final state & dump for UQ Likelihood
 //    if(bAdaptivity)
 //        Science::AutomaticRefinement<0,0>(*grid, blockfwt, refinement_tolerance, maxLevel, 1, &profiler);
-//    
-//    _dumpUQoutput(t);
-//    _dump((int) t);
 
     
     if(bVerbose) profiler.printSummary();
