@@ -1,0 +1,16 @@
+=============================
+        RAT ATLAS
+=============================
+
+s_Template_Tohoku_TPM4D: is a 4D volume of T2 rat atlas
+	
+  - labels are stored in the 4th dimension
+  - extracted labels stored as 3D volume are in folder atlas
+
+REFERENCES:
+Cite the attached paper for references:
+
+"An in vivo MRI template set for morphometry, tissue segmentation, and fMRI localization in rats" Pedro Antonio Valdés-Hernández at al. 
+
+atlasJ09-DCE and atlasJ09-T2w = are synthetic data of tumour growth inside the atlas anatomy used for the UQ inferecen 
+

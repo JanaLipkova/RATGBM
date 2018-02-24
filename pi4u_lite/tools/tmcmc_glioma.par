@@ -2,13 +2,13 @@
 
 
 # problem dimension
-Nth		8
+Nth		6
 
 # Max number of generations
 MaxStages	1000
 
 # Population size
-PopSize		1024
+PopSize		480
 
 # Chain Lengths
 MinChainLength	0
@@ -18,14 +18,13 @@ MaxChainLength	1
 
 # Boundaries
 Bdef             0	    4
-B0		-6.9078   -0.6931
-B1              -5.2983    0.0
-B2		-1.1548   -0.9957
-B3		-0.5946   -0.5007
-B4		-0.7934   -0.6799
-B5		-0.5108   -0.0513
-B6		-2.9957   -0.5108
-B7       	-2.9957   -2.3026
+B0		-6.9078   -1.3863
+B1              -5.2983    0.6931
+B2		-0.5108    0.0
+B3		-0.5108   -0.2231
+B4		-2.9957   -0.5108
+B5		-2.9957   -2.3026
+
 
 
 TolCOV		1  # 1 !!! don't play with fire

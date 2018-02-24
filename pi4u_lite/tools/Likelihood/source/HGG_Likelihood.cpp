@@ -48,7 +48,7 @@ long double HGG_Likelihood::_computeTiLogLikelihood(MatrixD3D model, int day, in
     assert(N == model.getSizeX() * model.getSizeY() * model.getSizeZ() );
     
     long double sum = 0.;
-    int cor_leng = 4;
+    int cor_leng = 2;
     
     for (int iz = 0; iz < dataZ; iz=iz+cor_leng )
         for (int iy = 0; iy < dataY; iy++)
@@ -86,7 +86,18 @@ long double HGG_Likelihood::_computeLogBernoulli(double u, double y, int Ti)
     
     double diff = u - uc;
     
-    long double alpha = 0.5 + 0.5 * sgn(diff) * (1. - exp( -diff * diff * is2));
+    //long double alpha = 0.5 + 0.5 * sgn(diff) * (1. - exp( -diff * diff * is2));
+
+    long double omega2 = (diff > 0.) ? 1. : diff*diff;
+    long double alpha = 0.5 + 0.5 * sgn(diff) * (1. - exp( -omega2 * is2));
+    
+    //truncation to avoid Inf with log(0)
+   if( (y== 0) && (alpha==1) )
+      alpha = 0.999;
+
+   if( (y== 1) && (alpha == 0) )
+      alpha = 1e-05;
+   
     return  (y == 1 ) ? log(alpha) : log(1.-alpha);
 }
 
@@ -111,24 +122,17 @@ void HGG_Likelihood::_writeToFile(long double output)
 void HGG_Likelihood::run()
 {
     char filename[256];
-    sprintf(filename,"M_UQ_J09.dat");
-    MatrixD3D model_J9(filename);
-    
     sprintf(filename,"M_UQ_J11.dat");
     MatrixD3D model_J11(filename);
 
     
-    int day = 9;
-    long double LT1_J9  = _computeTiLogLikelihood(model_J9, day, 1);
-    long double LT2_J9  = _computeTiLogLikelihood(model_J9, day, 2);
-    
-    day = 11;
+    int day = 11;
     long double LT1_J11  = _computeTiLogLikelihood(model_J11, day, 1);
     long double LT2_J11  = _computeTiLogLikelihood(model_J11, day, 2);
     
-    long double costFunction = LT1_J9 + LT2_J9 + LT1_J11 + LT2_J11 ;
+    long double costFunction = LT1_J11 + LT2_J11 ;
    
-    printf("LT1_J9=%Lf, LT2_J9=%Lf, LT1_J11=%Lf, LT2_J11=%Lf, \n", LT1_J9, LT2_J9, LT1_J11, LT2_J11);
+    printf("LT1_J11=%Lf, LT2_J11=%Lf, \n", LT1_J11, LT2_J11);
     printf("LogLike = %Lf \n", costFunction);
     _writeToFile(costFunction);
 

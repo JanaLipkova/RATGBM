@@ -28,12 +28,10 @@ static pthread_mutex_t fork_mutex = PTHREAD_MUTEX_INITIALIZER;
  PARAMETERS (shown values for synthetic data):
  x[0] = Dw
  x[1] = rho
- x[2] = icx
- x[3] = icy
- x[4] = icz
- x[5] = ucT1
- x[6] = ucT2
- x[7] = Ti_sigma2
+ x[2] = scale
+ x[3] = ucT1
+ x[4] = ucT2
+ x[5] = Ti_sigma2
  */
 
 #define USE_SCRATCH 0
@@ -111,40 +109,24 @@ retry:
         }
         
         
-        // 1.3 write input parametes to the simulation's input file (first 3)
+        // 1.3 convert parameters from log space to real space
         double param[n];
-        param[0] = exp( x[0] );         // D
-        param[1] = exp( x[1] );         // rho
-        param[2] = exp( x[2] );         // icx
-        param[3] = exp( x[3] );         // icy
-        param[4] = exp( x[4] );         // icz
-        param[5] = exp( x[5] );         // ucT1
-        param[6] = exp( x[6] );         // ucT2
-        param[7] = exp( x[7] );       // Ti_sigma2
-
-	// 1.4.1 Simulation input parameters
-        FILE *finp = fopen("HGG_InputParameters.txt", "w");
         int i;
-        for (i = 0; i < 2; i++) fprintf(finp, "%.16lf\n", param[i]);
+        for (i = 0; i < n; i++)
+          param[i] = exp( x[i] ); 
+
+	// 1.4 Simulation input parameters: D, rho, scale
+        FILE *finp = fopen("HGG_InputParameters.txt", "w");
+        for (i = 0; i < 3; i++) fprintf(finp, "%.16lf\n", param[i]);
         fclose(finp);
         
-        // 1.4.2 Initial Position of tumor 
-        float icx = param[2];
-        float icy = param[3];
-        float icz = param[4];
-        
-        FILE * pFile;
-        float buffer[3] = { icx , icy , icz };
-        pFile = fopen ("HGG_TumorIC.bin", "wb");
-        fwrite (buffer , sizeof(float), sizeof(buffer), pFile);
-        fclose (pFile);
         
         // 1.5 Likelihood input parameteres:
         // ucT1, ucT2, Ti_sigma2
         finp = fopen("LikelihoodInput.txt", "w");
         int j;
-        for (j = 5; j < n; j++) fprintf(finp, "%.16lf\n", param[j]);
-        fclose(finp);
+        for (j = 3; j < n; j++) fprintf(finp, "%.16lf\n", param[j]);
+	fclose(finp);
         
         /* 2. run simulation */
         sprintf(line, "./runAll.sh");
@@ -174,7 +156,7 @@ retry:
         while ((wpid = waitpid(rf, &status, WNOHANG)) == 0) {
             ctr++;
             sleep(1);
-            if (ctr == 600) {
+            if (ctr == 270) {
                 printf("XXXX: KILLING %d\n", rf); fflush(0);
                 kill(rf, SIGKILL);
                 break;

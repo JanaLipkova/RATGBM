@@ -36,7 +36,7 @@ Glioma_RAT_UQ::Glioma_RAT_UQ(int argc, const char ** argv): parser(argc, argv)
     
     
     ifstream mydata("HGG_InputParameters.txt");
-    Real Dg, Dw, rho, scale;
+    Dg, Dw, rho, scale;
     
     if (mydata.is_open())
     {
@@ -591,7 +591,7 @@ void Glioma_RAT_UQ::run()
     int iCounter        = 1;
     double h            = 1./(blockSize*blocksPerDimension);
     double dt           = 0.95 * h*h / ( 2.* _DIM * max(Dw, Dg) );
-    if(bVerbose)  printf("Dg=%e, Dw=%e, dt= %f, rho=%f , h=%f\n", Dg, Dw, dt, rho,h);
+    if(bVerbose)  printf("Dg=%e, Dw=%e, dt= %f, rho=%f , h=%f, scale=%e \n", Dg, Dw, dt, rho,h, scale);
     
     /* set times of MRI scans */
     vector<int> timeOfscan ;

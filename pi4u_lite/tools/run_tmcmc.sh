@@ -1,13 +1,13 @@
 #!/bin/bash
 #SBATCH -o myjob.%j.%N.out
 #SBATCH -D .
-#SBATCH -J F98_4K
+#SBATCH -J F98_2K
 #SBATCH --clusters=mpp2
-#SBATCH --ntasks=168
+#SBATCH --ntasks=112
 #SBATCH --cpus-per-task=1
 # if mpp1 is used replace above 28 by 16
 #SBATCH --export=NONE
-#SBATCH --time=30:00:00
+#SBATCH --time=25:00:00
 
 source /etc/profile.d/modules.sh
 module purge
