@@ -37,7 +37,7 @@ private:
     static void _readInTumourSegmentation(Grid<W,B>& grid, int pID, int day);
     void        _reactionDiffusionStep(BoundaryInfo* boundaryInfo, const int nParallelGranularity, const Real Dw, const Real Dg, const Real rho, double dt);
     void		_dump(int counter);
-    void        _dump2binary(int counter);
+    void        _dump2binary( );
     void        _normaliseTumour();
 
 public:

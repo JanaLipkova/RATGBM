@@ -233,10 +233,19 @@ void Glioma_RAT_IC_Approximation:: _readInTumourSegmentation(Grid<W,B>& grid, in
                         PT2w  =  T2w(mappedBrainX,mappedBrainY,mappedBrainZ);
                         PT1w  =  T1w(mappedBrainX,mappedBrainY,mappedBrainZ);
                     }
-                    
+
+                  if( pID > 10)
+                  {                    
                     block(ix,iy,iz).t1bc = (PT1w > 0.01) ? 1. : 0. ;  // T1w tumour segmentations
                     block(ix,iy,iz).t2bc = (PT2w > 0.01) ? 1. : 0.;   // T2w tumour segmentations
-                    
+                  }
+                  else
+		  { 	
+		      block(ix,iy,iz).t1bc = (PT1w > 0.7)  ? 1. : 0.; // Threshodl solution
+	              block(ix,iy,iz).t2bc = (PT2w > 0.25) ? 1. : 0.;
+
+	          }
+         
                     
                     if( (block(ix,iy,iz).t1bc > 0.5) && ( block(ix,iy,iz).t2bc == 0.) )
                         block(ix,iy,iz).phi = 1;
@@ -329,7 +338,7 @@ void Glioma_RAT_IC_Approximation:: _dump(int counter)
  - dump at the uniform finest resolution
  - use 3D Matrix structure to dump data in binary format
  - assume 3D simulation */
-void Glioma_RAT_IC_Approximation::_dump2binary(int day)
+void Glioma_RAT_IC_Approximation::_dump2binary()
 {
     int gpd = blocksPerDimension * blockSize;
     double hf  = 1./gpd;
@@ -400,7 +409,7 @@ void Glioma_RAT_IC_Approximation::_dump2binary(int day)
     
     char filename[256];
     
-    sprintf(filename,"IC_D%02d.dat",day);
+    sprintf(filename,"M%02d_TumourIC.dat",pID);
     tumor.dump(filename);
 
 }
@@ -415,7 +424,7 @@ void Glioma_RAT_IC_Approximation::run()
     ifstream mydata("HGG_InputParameters.txt");
     Real Dg, Dw, rho;
     double tend = parser("-Tend").asDouble(11.);
-    int iCounter = 0;
+    int iCounter = 1;
     
     if (mydata.is_open())
     {
@@ -459,8 +468,6 @@ void Glioma_RAT_IC_Approximation::run()
                 Science::AutomaticCompression<0,0>(*grid, blockfwt, compression_tolerance, -1, &profiler);
             }
             
-            //_normaliseTumour();
-            //_dump2binary( iCounter);
             _dump(iCounter);
             iCounter++;
             whenToWrite = whenToWrite+whenToWriteOffset;
@@ -471,7 +478,8 @@ void Glioma_RAT_IC_Approximation::run()
     }
     
     _normaliseTumour();
-    _dump(100);
+    _dump(iCounter);
+    _dump2binary();
     
     if(bVerbose) profiler.printSummary();
     if(bVerbose) printf("**** Dumping done\n");

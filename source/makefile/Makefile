@@ -119,6 +119,7 @@ Glioma_main.o \
 Glioma_dat2VP.o\
 Glioma_RAT_UQ.o\
 Glioma_RAT_preprocessing.o\
+Glioma_RAT_IC_Approximation.o\
 MRAGBoundaryBlockInfo.o \
 MRAGProfiler.o \
 MRAGWavelets_StaticData.o \
