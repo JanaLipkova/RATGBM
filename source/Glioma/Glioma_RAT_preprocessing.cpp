@@ -218,8 +218,8 @@ void Glioma_RAT_preprocessing::_computeTumourProperties(bool bDumbIC2file)
     printf("Center of mass T2: cx=%f, cy=%f, cz=%f \n", cmT2[0], cmT2[1], cmT2[2]);
 
     Real h3 = h*h*h;
-    Real VT1 = massT1 * h3;
-    Real VT2 = massT2 * h3;
+    VT1 = massT1 * h3;
+    VT2 = massT2 * h3;
     
     printf("VT1 = %f, VT2 = %f \n", VT1 , VT2);
     
@@ -248,7 +248,10 @@ void Glioma_RAT_preprocessing:: _computeEnclosingSphere(Grid<W,B>& grid)
     _readInTumorPosition(tumor_ic);
     
     vector<BlockInfo> vInfo = grid.getBlocksInfo();
-    const Real tumourRadius = 0.2;//0.25;
+    Real r3 = VT2 * 3. / (4. * M_PI);
+    Real r = pow(r3, 1./3);
+    const Real tumourRadius = r + 0.1;
+    //    const Real tumourRadius = 0.2;//0.25;
     
     for(int i=0; i<vInfo.size(); i++)
     {
@@ -531,7 +534,7 @@ void Glioma_RAT_preprocessing::run()
     {
         std::cout<<"Tumour statistics at the day="<< *it << std::endl;
         
-        if(*it == 9)
+        if(*it == 11)
         {
             bDumbIC2file = 1;
             _readInTumourSegmentation(*grid, pID, *it);

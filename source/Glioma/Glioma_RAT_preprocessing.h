@@ -31,6 +31,7 @@ private:
     bool                                    bAdaptivity;
     bool                                    bVerbose;
     int                                     pID;
+    Real                                    VT1,VT2;
     
     static void _ic(Grid<W,B>& grid, int pID);
     void        _computeTumourProperties(bool bDumbIC2file);
