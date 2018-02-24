@@ -34,6 +34,7 @@
 // RAT
 #include "Glioma_RAT_UQ.h"
 #include "Glioma_RAT_preprocessing.h"
+#include "Glioma_RAT_IC_Approximation.h"
 
 #include "Test.h"
 
@@ -86,6 +87,8 @@ int main(int argc,const char ** argv)
           s = new Glioma_dat2VP(argc, (const char **)argv);
       else if(parser("-anatomy").asString() == "rat")
           s = new Glioma_RAT_UQ(argc, (const char **)argv);
+      else if(parser("-anatomy").asString() == "ratIC")
+          s = new Glioma_RAT_IC_Approximation(argc, (const char **)argv);
       else if(parser("-anatomy").asString() == "ratPP")
           s = new Glioma_RAT_preprocessing(argc, (const char **)argv);
       else
