@@ -58,9 +58,21 @@ Glioma_RAT_UQ::Glioma_RAT_UQ(int argc, const char ** argv): parser(argc, argv)
         {
             _ic_anatomy(*grid, pID);
             _readInTumourFromFile(*grid, pID, scale);
-
         }
             break;
+            
+        case 2:
+        {
+            _ic_rat_two_foci_tumor(*grid, pID);
+        }
+            break;
+            
+        case 3:
+        {
+            _ic_rat_elongated_tumor(*grid, pID);
+        }
+            break;
+            
             
         default:
             break;
@@ -228,7 +240,6 @@ void Glioma_RAT_UQ::_ic_rat_point_tumor(Grid<W,B>& grid, int pID)
         
     }
 }
-
 
 void Glioma_RAT_UQ::_readInTumorPosition(vector<Real>& tumorIC )
 {
@@ -437,6 +448,326 @@ void Glioma_RAT_UQ:: _readInTumourFromFile(Grid<W,B>& grid, int pID, Real scale)
                     
                     
                     block(ix,iy,iz).phi = tumourIC * scale;
+                    
+                }
+        
+        grid.getBlockCollection().release(info.blockID);
+        
+    }
+}
+
+
+
+void Glioma_RAT_UQ::_ic_rat_two_foci_tumor(Grid<W,B>& grid, int pID)
+{
+    char dataFolder   [200];
+    char patientFolder[200];
+    char anatomy      [200];
+    
+#ifdef LRZ_CLUSTER
+    sprintf(dataFolder,"/home/hpc/txh01/di49zin/GliomaAdvance/RATGBM/source/Anatomy/F98/");
+#else
+    sprintf(dataFolder,"/home/baldesi/Glioma/RATGBM/source/Anatomy/F98/");
+#endif
+    
+    sprintf(patientFolder, "%sM%02d/M%02d",dataFolder,pID,pID);
+    printf("Reading anatomy from: %s \n", patientFolder);
+    
+    sprintf(anatomy, "%s_gm.dat", patientFolder);
+    MatrixD3D GM(anatomy);
+    sprintf(anatomy, "%s_wm.dat", patientFolder);
+    MatrixD3D WM(anatomy);
+    sprintf(anatomy, "%s_csf.dat", patientFolder);
+    MatrixD3D CSF(anatomy);
+    sprintf(anatomy, "%s_mask.dat", patientFolder);
+    MatrixD3D MASK(anatomy);
+    
+    int brainSizeX = (int) GM.getSizeX();
+    int brainSizeY = (int) GM.getSizeY();
+    int brainSizeZ = (int) GM.getSizeZ();
+    
+    int brainSizeMax = max(brainSizeX, max(brainSizeY,brainSizeZ));
+    L    = brainSizeMax * 0.117;   // voxel spacing 117 µm, convert to mm -> L ~ 14 mm
+    
+    std::cout<<"brainSizeX="<<brainSizeX<<" brainSizeY="<<brainSizeY<<" brainSizeZ="<<brainSizeZ<<std::endl;
+    std::cout<<"L="<<L<<std::endl;
+    
+    double brainHx = 1.0 / ((double)(brainSizeMax)); // should be w.r.t. longest dimension for correct aspect ratio
+    double brainHy = 1.0 / ((double)(brainSizeMax)); // should be w.r.t. longest dimension for correct aspect ratio
+    double brainHz = 1.0 / ((double)(brainSizeMax)); // should be w.r.t. longest dimension for correct aspect ratio
+    
+    /* Tumor Set UP */
+    vector<Real> tumor_ic(_DIM);
+    vector<Real> tumor_ic2(_DIM);
+
+    _readInTumorPosition(tumor_ic);
+    
+    tumor_ic2[0] = tumor_ic[0] - 0.02;
+    tumor_ic2[1] = tumor_ic[1] - 0.02;
+    tumor_ic2[2] = tumor_ic[2];
+
+    
+    // Tumour initial injection for F98: 3µL = 3 mm^3 --> volume corresponding to sphere with radius r=0.8947 mm
+    
+    const Real tumorRadius = 0.01;//0.8947/L ; // map to [0,1]^3 space
+    const Real smooth_sup  = 2;		// 2.suppor of smoothening, over how many gp to smooth
+    
+    vector<BlockInfo> vInfo = grid.getBlocksInfo();
+    
+    for(int i=0; i<vInfo.size(); i++)
+    {
+        BlockInfo& info = vInfo[i];
+        B& block = grid.getBlockCollection()[info.blockID];
+        
+        const Real h = vInfo[0].h[0];  // make sure inference and propagation is run with same h for IC
+        const Real iw = 1./(smooth_sup * h);   // width of smoothening => now it is over two grid points
+        
+        for(int iz=0; iz<B::sizeZ; iz++)
+            for(int iy=0; iy<B::sizeY; iy++)
+                for(int ix=0; ix<B::sizeX; ix++)
+                {
+                    double x[3];
+                    info.pos(x, ix, iy, iz);
+                    
+                    /* Anatomy */
+                    int mappedBrainX = (int)round( x[0] / brainHx  );
+                    int mappedBrainY = (int)round( x[1] / brainHy  );
+                    int mappedBrainZ = (int)round( x[2] / brainHz  );
+                    
+                    
+                    Real PGt, PWt, Pcsf, Pmask;
+                    
+                    if ( (mappedBrainX < 0 || mappedBrainX >= brainSizeX) || (mappedBrainY < 0 || mappedBrainY >= brainSizeY) || (mappedBrainZ < 0 || mappedBrainZ >= brainSizeZ) )                    {
+                        PGt   = 0.;
+                        PWt   = 0.;
+                        Pcsf  = 0.;
+                        Pmask = 0.;
+                    }
+                    else
+                    {
+                        PGt  =  GM(mappedBrainX,mappedBrainY,mappedBrainZ);
+                        PWt  =  WM(mappedBrainX,mappedBrainY,mappedBrainZ);
+                        Pcsf =  CSF(mappedBrainX,mappedBrainY,mappedBrainZ);
+                        Pmask = MASK(mappedBrainX,mappedBrainY,mappedBrainZ);
+                    }
+                    
+                    double all = PGt + PWt + Pcsf;
+                    
+                    if( all >  0.1 )
+                    {
+                        Pcsf = ( Pcsf > 0.1 ) ? 1. : Pcsf;  // threasholding to ensure hemisphere separations
+                        block(ix,iy,iz).p_csf = Pcsf;
+                        
+                        if(Pcsf  < 1.)
+                        {
+                            if(PWt > 0.5)
+                            {
+                                block(ix,iy,iz).p_w    = 1.;//  / (PWt + PGt);
+                                block(ix,iy,iz).p_g    = 0.;//  / (PWt + PGt);
+                            }
+                            else if (PGt > 0.5)
+                            {
+                                block(ix,iy,iz).p_w    = 0.;
+                                block(ix,iy,iz).p_g    = 1.;
+                            }
+                        }
+                        
+                    }
+                    
+                    // fill the holes in the anatomy segmentations for the rats
+                    all = block(ix,iy,iz).p_csf + block(ix,iy,iz).p_w + block(ix,iy,iz).p_g;
+                    
+                    if( (Pmask > 0.1 )&&( all< 0.1 )  )
+                        block(ix,iy,iz).p_g = 1.;
+                    
+                    /* tumor foci 1*/
+                    const Real p[3] = {x[0] - tumor_ic[0], x[1] - tumor_ic[1], x[2] - tumor_ic[2]};
+                    const Real dist = sqrt(p[0]*p[0] + p[1]*p[1] + p[2]*p[2]);    // distance of curent voxel from tumor center
+                    const Real psi = (dist - tumorRadius)*iw;
+                    
+                    if ((psi < -1)&& ((PGt>0.001) || (PWt >0.001)) )		// we are in tumor
+                        block(ix,iy,iz).phi = 1.0;
+                    else if(( (-1 <= psi) && (psi <= 1) )&& ((PGt>0) || (PWt >0)) )
+                        block(ix,iy,iz).phi = 1.0 * 0.5 * (1 - psi - sin(M_PI*psi)/(M_PI));
+                    else
+                        block(ix,iy,iz).phi = 0.0;
+                    
+                    
+                    /* tumor foci 2*/
+                    p[3] = {x[0] - tumor_ic2[0], x[1] - tumor_ic2[1], x[2] - tumor_ic2[2]};
+                    dist = sqrt(p[0]*p[0] + p[1]*p[1] + p[2]*p[2]);    // distance of curent voxel from tumor center
+                    psi = (dist - tumorRadius)*iw;
+                    
+                    if ((psi < -1)&& ((PGt>0.001) || (PWt >0.001)) )		// we are in tumor
+                        block(ix,iy,iz).phi = 1.0;
+                    else if(( (-1 <= psi) && (psi <= 1) )&& ((PGt>0) || (PWt >0)) )
+                        block(ix,iy,iz).phi = 1.0 * 0.5 * (1 - psi - sin(M_PI*psi)/(M_PI));
+                    else
+                        block(ix,iy,iz).phi = 0.0;
+                    
+                    /*scale tumour so max concentration is 1 to mimic tumour injection */
+                    block(ix,iy,iz).phi = min(1.0, 4.*block(ix,iy,iz).phi ); //to ensure that max concentraiton is 1, for correct front propagation speed
+                    block(ix,iy,iz).chi = Pmask;
+                    
+                }
+        
+        grid.getBlockCollection().release(info.blockID);
+        
+    }
+}
+
+
+
+
+void Glioma_RAT_UQ::_ic_rat_elongated_tumor(Grid<W,B>& grid, int pID)
+{
+    char dataFolder   [200];
+    char patientFolder[200];
+    char anatomy      [200];
+    
+#ifdef LRZ_CLUSTER
+    sprintf(dataFolder,"/home/hpc/txh01/di49zin/GliomaAdvance/RATGBM/source/Anatomy/F98/");
+#else
+    sprintf(dataFolder,"/home/baldesi/Glioma/RATGBM/source/Anatomy/F98/");
+#endif
+    
+    sprintf(patientFolder, "%sM%02d/M%02d",dataFolder,pID,pID);
+    printf("Reading anatomy from: %s \n", patientFolder);
+    
+    sprintf(anatomy, "%s_gm.dat", patientFolder);
+    MatrixD3D GM(anatomy);
+    sprintf(anatomy, "%s_wm.dat", patientFolder);
+    MatrixD3D WM(anatomy);
+    sprintf(anatomy, "%s_csf.dat", patientFolder);
+    MatrixD3D CSF(anatomy);
+    sprintf(anatomy, "%s_mask.dat", patientFolder);
+    MatrixD3D MASK(anatomy);
+    
+    int brainSizeX = (int) GM.getSizeX();
+    int brainSizeY = (int) GM.getSizeY();
+    int brainSizeZ = (int) GM.getSizeZ();
+    
+    int brainSizeMax = max(brainSizeX, max(brainSizeY,brainSizeZ));
+    L    = brainSizeMax * 0.117;   // voxel spacing 117 µm, convert to mm -> L ~ 14 mm
+    
+    std::cout<<"brainSizeX="<<brainSizeX<<" brainSizeY="<<brainSizeY<<" brainSizeZ="<<brainSizeZ<<std::endl;
+    std::cout<<"L="<<L<<std::endl;
+    
+    double brainHx = 1.0 / ((double)(brainSizeMax)); // should be w.r.t. longest dimension for correct aspect ratio
+    double brainHy = 1.0 / ((double)(brainSizeMax)); // should be w.r.t. longest dimension for correct aspect ratio
+    double brainHz = 1.0 / ((double)(brainSizeMax)); // should be w.r.t. longest dimension for correct aspect ratio
+    
+    /* Tumor Set UP */
+    vector<Real> tumor_ic(_DIM);
+    _readInTumorPosition(tumor_ic);
+    
+    // Tumour initial injection for F98: 3µL = 3 mm^3 --> volume corresponding to sphere with radius r=0.8947 mm
+    
+    const Real tumorRadius = 0.01;//0.8947/L ; // map to [0,1]^3 space
+    const Real smooth_sup  = 2;		// 2.suppor of smoothening, over how many gp to smooth
+    
+    vector<BlockInfo> vInfo = grid.getBlocksInfo();
+    
+    for(int i=0; i<vInfo.size(); i++)
+    {
+        BlockInfo& info = vInfo[i];
+        B& block = grid.getBlockCollection()[info.blockID];
+        
+        const Real h = vInfo[0].h[0];  // make sure inference and propagation is run with same h for IC
+        const Real iw = 1./(smooth_sup * h);   // width of smoothening => now it is over two grid points
+        
+        for(int iz=0; iz<B::sizeZ; iz++)
+            for(int iy=0; iy<B::sizeY; iy++)
+                for(int ix=0; ix<B::sizeX; ix++)
+                {
+                    double x[3];
+                    info.pos(x, ix, iy, iz);
+                    
+                    /* Anatomy */
+                    int mappedBrainX = (int)round( x[0] / brainHx  );
+                    int mappedBrainY = (int)round( x[1] / brainHy  );
+                    int mappedBrainZ = (int)round( x[2] / brainHz  );
+                    
+                    
+                    Real PGt, PWt, Pcsf, Pmask;
+                    
+                    if ( (mappedBrainX < 0 || mappedBrainX >= brainSizeX) || (mappedBrainY < 0 || mappedBrainY >= brainSizeY) || (mappedBrainZ < 0 || mappedBrainZ >= brainSizeZ) )                    {
+                        PGt   = 0.;
+                        PWt   = 0.;
+                        Pcsf  = 0.;
+                        Pmask = 0.;
+                    }
+                    else
+                    {
+                        PGt  =  GM(mappedBrainX,mappedBrainY,mappedBrainZ);
+                        PWt  =  WM(mappedBrainX,mappedBrainY,mappedBrainZ);
+                        Pcsf =  CSF(mappedBrainX,mappedBrainY,mappedBrainZ);
+                        Pmask = MASK(mappedBrainX,mappedBrainY,mappedBrainZ);
+                    }
+                    
+                    double all = PGt + PWt + Pcsf;
+                    
+                    if( all >  0.1 )
+                    {
+                        Pcsf = ( Pcsf > 0.1 ) ? 1. : Pcsf;  // threasholding to ensure hemisphere separations
+                        block(ix,iy,iz).p_csf = Pcsf;
+                        
+                        if(Pcsf  < 1.)
+                        {
+                            if(PWt > 0.5)
+                            {
+                                block(ix,iy,iz).p_w    = 1.;//  / (PWt + PGt);
+                                block(ix,iy,iz).p_g    = 0.;//  / (PWt + PGt);
+                            }
+                            else if (PGt > 0.5)
+                            {
+                                block(ix,iy,iz).p_w    = 0.;
+                                block(ix,iy,iz).p_g    = 1.;
+                            }
+                        }
+                        
+                    }
+                    
+                    // fill the holes in the anatomy segmentations for the rats
+                    all = block(ix,iy,iz).p_csf + block(ix,iy,iz).p_w + block(ix,iy,iz).p_g;
+                    
+                    if( (Pmask > 0.1 )&&( all< 0.1 )  )
+                        block(ix,iy,iz).p_g = 1.;
+                    
+                    /* tumor part 1:*/
+                    const Real p[3] = {x[0] - tumor_ic[0], x[1] - tumor_ic[1], x[2] - tumor_ic[2]};
+                    const Real dist = sqrt(p[0]*p[0] + p[1]*p[1] + p[2]*p[2]);    // distance of curent voxel from tumor center
+                    const Real psi = (dist - tumorRadius)*iw;
+                    
+                    if ((psi < -1)&& ((PGt>0.001) || (PWt >0.001)) )		// we are in tumor
+                        block(ix,iy,iz).phi = 1.0;
+                    else if(( (-1 <= psi) && (psi <= 1) )&& ((PGt>0) || (PWt >0)) )
+                        block(ix,iy,iz).phi = 1.0 * 0.5 * (1 - psi - sin(M_PI*psi)/(M_PI));
+                    else
+                        block(ix,iy,iz).phi = 0.0;
+                    
+                    /* tumor part 2,3,4:*/
+                    for (int i=0; i<4; i++)
+                    {
+                        tumor_ic[0] = tumor_ic[0] - 0.005;
+                        tumor_ic[1] = tumor_ic[1] - 0.005;
+                        
+                        p[3] = {x[0] - tumor_ic[0], x[1] - tumor_ic[1], x[2] - tumor_ic[2]};
+                        dist = sqrt(p[0]*p[0] + p[1]*p[1] + p[2]*p[2]);    // distance of curent voxel from tumor center
+                        psi = (dist - tumorRadius)*iw;
+                        
+                        if ((psi < -1)&& ((PGt>0.001) || (PWt >0.001)) )		// we are in tumor
+                            block(ix,iy,iz).phi = 1.0;
+                        else if(( (-1 <= psi) && (psi <= 1) )&& ((PGt>0) || (PWt >0)) )
+                            block(ix,iy,iz).phi = 1.0 * 0.5 * (1 - psi - sin(M_PI*psi)/(M_PI));
+                        else
+                            block(ix,iy,iz).phi = 0.0;
+                    }
+                    
+ 
+                    // scale so max tumor concentraiton is 1 to mimic tumour injection
+                    block(ix,iy,iz).phi = min(1.0, 4.*block(ix,iy,iz).phi ); //to ensure that max concentraiton is 1, for correct front propagation speed
+                    block(ix,iy,iz).chi = Pmask;
                     
                 }
         

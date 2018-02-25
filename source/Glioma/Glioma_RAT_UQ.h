@@ -41,6 +41,10 @@ private:
     static void _ic_rat_point_tumor(Grid<W,B>& grid, int pID);
     static void _readInTumorPosition(vector<Real>& tumorIC);
     
+    static void _ic_rat_two_foci_tumor(Grid<W,B>& grid, int pID);
+    static void _ic_rat_elongated_tumor(Grid<W,B>& grid, int pID);
+
+    
     static void _ic_anatomy(Grid<W,B>& grid, int pID);
     static void _readInTumourFromFile(Grid<W,B>& grid, int pID, Real scale);
     
