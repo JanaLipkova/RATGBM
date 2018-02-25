@@ -122,17 +122,23 @@ void HGG_Likelihood::_writeToFile(long double output)
 void HGG_Likelihood::run()
 {
     char filename[256];
+    sprintf(filename,"M_UQ_J09.dat");
+    MatrixD3D model_J09(filename);
+
     sprintf(filename,"M_UQ_J11.dat");
     MatrixD3D model_J11(filename);
 
-    
-    int day = 11;
+    int day = 9;
+    long double LT1_J09  = _computeTiLogLikelihood(model_J09, day, 1);
+    long double LT2_J09  = _computeTiLogLikelihood(model_J09, day, 2);
+
+    day=11;
     long double LT1_J11  = _computeTiLogLikelihood(model_J11, day, 1);
     long double LT2_J11  = _computeTiLogLikelihood(model_J11, day, 2);
     
-    long double costFunction = LT1_J11 + LT2_J11 ;
+    long double costFunction = LT1_J09 + LT2_J09 + LT1_J11 + LT2_J11 ;
    
-    printf("LT1_J11=%Lf, LT2_J11=%Lf, \n", LT1_J11, LT2_J11);
+    printf("LT1_J09=%Lf, LT2_J09=%Lf, LT1_J11=%Lf, LT2_J11=%Lf, \n", LT1_J09, LT2_J09, LT1_J11, LT2_J11);
     printf("LogLike = %Lf \n", costFunction);
     _writeToFile(costFunction);
 

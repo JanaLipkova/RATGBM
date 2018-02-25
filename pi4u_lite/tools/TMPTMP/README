@@ -5,6 +5,8 @@
 This folder must contain everything needed for the Glioma TMCMC Solver:
 
 DATA:
+  * T1w_D09.dat
+  * T2w_D09.dat
   * T1w_D11.dat
   * T2w_D11.dat
   * Sphere.dat // enclosing points used for likelihood evaluation

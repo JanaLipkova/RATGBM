@@ -1,6 +1,12 @@
+#===============================
+#  Script for GLIOMA TMCMC
+#  * run brain simulaiton
+#  * after run likelohood
+#===============================
+
 
 # enviroment
-#export OMP_NUM_THREADS=1
+export OMP_NUM_THREADS=1
 
 # brain simulation set up
 program=brain

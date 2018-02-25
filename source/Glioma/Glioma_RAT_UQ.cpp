@@ -604,11 +604,8 @@ void Glioma_RAT_UQ::run()
     
     // since inpute file contains tumour at day 9, save just day 11
     if(ICtype == 1)
-    {
         t = 9;
-        ++it;
-        whenToWrite = *it;
-    }
+    
     
     
     /* initial refinement & compression */
@@ -646,7 +643,15 @@ void Glioma_RAT_UQ::run()
         }
     }
 
-    
+  // save the last point if omited because of too big time step
+  if(t > whenToWrite)
+  {
+            if(bVerbose) printf("Dumping data at time t=%f\n", t);
+      _dumpUQoutput(whenToWrite);
+      _dump((int) whenToWrite );
+  }    
+
+
     // Refine final state & dump for UQ Likelihood
 //    if(bAdaptivity)
 //        Science::AutomaticRefinement<0,0>(*grid, blockfwt, refinement_tolerance, maxLevel, 1, &profiler);
