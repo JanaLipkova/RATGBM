@@ -50,19 +50,22 @@ Glioma_RAT_UQ::Glioma_RAT_UQ(int argc, const char ** argv): parser(argc, argv)
     switch (ICtype) {
         case 0:
         {
+           if(bVerbose) printf("Initialising point tumour \n");
             _ic_rat_point_tumor(*grid, pID);
         }
             break;
             
         case 1:
         {
-            _ic_anatomy(*grid, pID);
+            if(bVerbose) printf("Reading tumour from file tumour \n");
+	    _ic_anatomy(*grid, pID);
             _readInTumourFromFile(*grid, pID, scale);
         }
             break;
             
         case 2:
         {
+            if(bVerbose) printf("Initialising two point tumours \n");
             _ic_rat_two_foci_tumor(*grid, pID);
         }
             break;
@@ -401,6 +404,7 @@ void Glioma_RAT_UQ:: _readInTumourFromFile(Grid<W,B>& grid, int pID, Real scale)
 #endif
     
     sprintf(patientFolder, "%sM%02d/M%02d_TumourIC.dat",dataFolder,pID,pID);
+    printf("Reading tumour from %s \n", patientFolder);
     MatrixD3D Tumor(patientFolder);
     
     
@@ -499,17 +503,32 @@ void Glioma_RAT_UQ::_ic_rat_two_foci_tumor(Grid<W,B>& grid, int pID)
     /* Tumor Set UP */
     vector<Real> tumor_ic(_DIM);
     vector<Real> tumor_ic2(_DIM);
+    
+     Real tumorRadius;
+     Real tumorRadius2;
 
     _readInTumorPosition(tumor_ic);
     
-    tumor_ic2[0] = tumor_ic[0] - 0.02;
-    tumor_ic2[1] = tumor_ic[1] - 0.02;
-    tumor_ic2[2] = tumor_ic[2];
+   // IC are two identical sphere, which will fuse into elongated tumour
+    if(pID == 1)
+     {
+       tumor_ic2[0] = 0.30;  
+       tumor_ic2[1] = 0.54;
+       tumor_ic2[2] = 0.48;
+       tumorRadius  = 0.01;
+       tumorRadius2 = 0.01;
+     }
+     
+     // IC two sphere of different size, will shape two foci tumour
+     if( pID ==2)
+     {
+       tumor_ic2[0] = 0.35;
+       tumor_ic2[1] = 0.62;
+       tumor_ic2[2] = 0.48;
+       tumorRadius  = 0.011;
+       tumorRadius2 = 0.007;
+     }
 
-    
-    // Tumour initial injection for F98: 3µL = 3 mm^3 --> volume corresponding to sphere with radius r=0.8947 mm
-    
-    const Real tumorRadius = 0.01;//0.8947/L ; // map to [0,1]^3 space
     const Real smooth_sup  = 2;		// 2.suppor of smoothening, over how many gp to smooth
     
     vector<BlockInfo> vInfo = grid.getBlocksInfo();
@@ -581,9 +600,9 @@ void Glioma_RAT_UQ::_ic_rat_two_foci_tumor(Grid<W,B>& grid, int pID)
                         block(ix,iy,iz).p_g = 1.;
                     
                     /* tumor foci 1*/
-                    const Real p[3] = {x[0] - tumor_ic[0], x[1] - tumor_ic[1], x[2] - tumor_ic[2]};
-                    const Real dist = sqrt(p[0]*p[0] + p[1]*p[1] + p[2]*p[2]);    // distance of curent voxel from tumor center
-                    const Real psi = (dist - tumorRadius)*iw;
+                    Real p[3] = {x[0] - tumor_ic[0], x[1] - tumor_ic[1], x[2] - tumor_ic[2]};
+                    Real dist = sqrt(p[0]*p[0] + p[1]*p[1] + p[2]*p[2]);    // distance of curent voxel from tumor center
+                    Real psi = (dist - tumorRadius)*iw;
                     
                     if ((psi < -1)&& ((PGt>0.001) || (PWt >0.001)) )		// we are in tumor
                         block(ix,iy,iz).phi = 1.0;
@@ -594,16 +613,18 @@ void Glioma_RAT_UQ::_ic_rat_two_foci_tumor(Grid<W,B>& grid, int pID)
                     
                     
                     /* tumor foci 2*/
-                    p[3] = {x[0] - tumor_ic2[0], x[1] - tumor_ic2[1], x[2] - tumor_ic2[2]};
+                    p[0] = x[0] - tumor_ic2[0];
+                    p[1] = x[1] - tumor_ic2[1];
+                    p[2] = x[2] - tumor_ic2[2];
                     dist = sqrt(p[0]*p[0] + p[1]*p[1] + p[2]*p[2]);    // distance of curent voxel from tumor center
-                    psi = (dist - tumorRadius)*iw;
+                    psi = (dist - tumorRadius2)*iw;
                     
                     if ((psi < -1)&& ((PGt>0.001) || (PWt >0.001)) )		// we are in tumor
-                        block(ix,iy,iz).phi = 1.0;
+                        block(ix,iy,iz).phi += 1.0;
                     else if(( (-1 <= psi) && (psi <= 1) )&& ((PGt>0) || (PWt >0)) )
-                        block(ix,iy,iz).phi = 1.0 * 0.5 * (1 - psi - sin(M_PI*psi)/(M_PI));
+                        block(ix,iy,iz).phi += 1.0 * 0.5 * (1 - psi - sin(M_PI*psi)/(M_PI));
                     else
-                        block(ix,iy,iz).phi = 0.0;
+                        block(ix,iy,iz).phi += 0.0;
                     
                     /*scale tumour so max concentration is 1 to mimic tumour injection */
                     block(ix,iy,iz).phi = min(1.0, 4.*block(ix,iy,iz).phi ); //to ensure that max concentraiton is 1, for correct front propagation speed
@@ -659,6 +680,7 @@ void Glioma_RAT_UQ::_ic_rat_elongated_tumor(Grid<W,B>& grid, int pID)
     
     /* Tumor Set UP */
     vector<Real> tumor_ic(_DIM);
+    vector<Real> tumor_ic2(_DIM);
     _readInTumorPosition(tumor_ic);
     
     // Tumour initial injection for F98: 3µL = 3 mm^3 --> volume corresponding to sphere with radius r=0.8947 mm
@@ -735,9 +757,9 @@ void Glioma_RAT_UQ::_ic_rat_elongated_tumor(Grid<W,B>& grid, int pID)
                         block(ix,iy,iz).p_g = 1.;
                     
                     /* tumor part 1:*/
-                    const Real p[3] = {x[0] - tumor_ic[0], x[1] - tumor_ic[1], x[2] - tumor_ic[2]};
-                    const Real dist = sqrt(p[0]*p[0] + p[1]*p[1] + p[2]*p[2]);    // distance of curent voxel from tumor center
-                    const Real psi = (dist - tumorRadius)*iw;
+                    Real p[3] = {x[0] - tumor_ic[0], x[1] - tumor_ic[1], x[2] - tumor_ic[2]};
+                    Real dist = sqrt(p[0]*p[0] + p[1]*p[1] + p[2]*p[2]);    // distance of curent voxel from tumor center
+                    Real psi = (dist - tumorRadius)*iw;
                     
                     if ((psi < -1)&& ((PGt>0.001) || (PWt >0.001)) )		// we are in tumor
                         block(ix,iy,iz).phi = 1.0;
@@ -746,23 +768,28 @@ void Glioma_RAT_UQ::_ic_rat_elongated_tumor(Grid<W,B>& grid, int pID)
                     else
                         block(ix,iy,iz).phi = 0.0;
                     
-                    /* tumor part 2,3,4:*/
-                    for (int i=0; i<4; i++)
+                    /* tumor part 2,3,4 */
+                    for (int i=1; i<5; i++)
                     {
-                        tumor_ic[0] = tumor_ic[0] - 0.005;
-                        tumor_ic[1] = tumor_ic[1] - 0.005;
-                        
-                        p[3] = {x[0] - tumor_ic[0], x[1] - tumor_ic[1], x[2] - tumor_ic[2]};
+                        tumor_ic2[0] = tumor_ic[0] - i*0.01;
+                        tumor_ic2[1] = tumor_ic[1] - i*0.01;
+                        tumor_ic2[2] = tumor_ic[2] ;
+
+                        p[0] = x[0] - tumor_ic2[0];
+                        p[1] = x[1] - tumor_ic2[1];
+                        p[2] = x[2] - tumor_ic2[2];
+
                         dist = sqrt(p[0]*p[0] + p[1]*p[1] + p[2]*p[2]);    // distance of curent voxel from tumor center
                         psi = (dist - tumorRadius)*iw;
                         
                         if ((psi < -1)&& ((PGt>0.001) || (PWt >0.001)) )		// we are in tumor
-                            block(ix,iy,iz).phi = 1.0;
+                            block(ix,iy,iz).phi += 1.0;
                         else if(( (-1 <= psi) && (psi <= 1) )&& ((PGt>0) || (PWt >0)) )
-                            block(ix,iy,iz).phi = 1.0 * 0.5 * (1 - psi - sin(M_PI*psi)/(M_PI));
+                            block(ix,iy,iz).phi += 1.0 * 0.5 * (1 - psi - sin(M_PI*psi)/(M_PI));
                         else
-                            block(ix,iy,iz).phi = 0.0;
-                    }
+                            block(ix,iy,iz).phi += 0.0;
+                       
+                    } 
                     
  
                     // scale so max tumor concentraiton is 1 to mimic tumour injection

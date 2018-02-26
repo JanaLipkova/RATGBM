@@ -201,7 +201,10 @@ void Glioma_RAT_IC_Approximation:: _readInTumourSegmentation(Grid<W,B>& grid, in
     double brainHx = 1.0 / ((double)(brainSizeMax)); // should be w.r.t. longest dimension for correct aspect ratio
     double brainHy = 1.0 / ((double)(brainSizeMax)); // should be w.r.t. longest dimension for correct aspect ratio
     double brainHz = 1.0 / ((double)(brainSizeMax)); // should be w.r.t. longest dimension for correct aspect ratio
-    
+     
+    const Real ucT1 = (pID == 1) ? 0.75 : 0.7;
+    const Real ucT2 = 0.25;
+  
     vector<BlockInfo> vInfo = grid.getBlocksInfo();
     
     for(int i=0; i<vInfo.size(); i++)
@@ -241,8 +244,8 @@ void Glioma_RAT_IC_Approximation:: _readInTumourSegmentation(Grid<W,B>& grid, in
                   }
                   else
 		  { 	
-		      block(ix,iy,iz).t1bc = (PT1w > 0.7)  ? 1. : 0.; // Threshodl solution
-	              block(ix,iy,iz).t2bc = (PT2w > 0.25) ? 1. : 0.;
+		      block(ix,iy,iz).t1bc = (PT1w > ucT1)  ? 1. : 0.; // Threshodl solution
+	              block(ix,iy,iz).t2bc = (PT2w > ucT2) ? 1. : 0.;
 
 	          }
          
