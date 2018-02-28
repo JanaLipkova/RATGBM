@@ -1,6 +1,6 @@
 # Load modules
 module purge
-module load admin/1.0 lrz/default 
+module load admin/1.0 lrz/default intel/17.0 mkl/2017 
 module load gsl/2.3 blast gcc/4.9
 echo "Currently loaded modules:"
 module list
