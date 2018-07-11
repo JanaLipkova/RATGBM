@@ -17,7 +17,7 @@ addpath('../lib/Matlab2C/matrixMatlab2Cpp/matlab/')
 addpath('../lib/')
 
 % 0) set input paht
-rID = 29 %42,38,36,34,30,29
+rID = 38; %[30,34,36,38,42]   %42,38,36,34,30,29
 bAnatomy = 1;
 day_list =  [9,11,14,16];
 
@@ -28,7 +28,7 @@ for day = day_list
     inputModPath   = [inputRatPath,'Modalities/day',num2str(day,'%02d'),'/'];
     inputAnatPath  = [inputRatPath,'Anat-VOI/'];
     inputMaskPath  = [inputRatPath,'Mask/'];
-    inputTumPath   = [inputRatPath,'Tumor-ROI/corrected/'];
+    inputTumPath   = [inputRatPath,'Tumor-ROI/corrected/new2/'];
     
     outputTumPath  = [inputRatPath,'isotropic/tumour/'];
     outputAnatPath = [inputRatPath,'isotropic/anatomy/'];
@@ -39,8 +39,8 @@ for day = day_list
 %     T2w  = MRIread([inputModPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-Coreg01_Anat.nii']);
     DCE  = MRIread([inputModPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-CoregDCE-AUC.nii']);
     mask = MRIread([inputMaskPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-Mask.nii']);
-    T2ws = MRIread([inputTumPath,'M',num2str(rID),'_J',num2str(day,'%02d'),'_T2w.nii']);
-    DCEs = MRIread([inputTumPath,'M',num2str(rID),'_J',num2str(day,'%02d'),'_DCE.nii']);
+    T2ws = MRIread([inputTumPath,'M',num2str(rID),'_J',num2str(day,'%02d'),'_T2w.nii.gz']);
+    DCEs = MRIread([inputTumPath,'M',num2str(rID),'_J',num2str(day,'%02d'),'_DCE.nii.gz']);
     
     % 2) make data isotropic
     [Nx,Ny,Nz] = size(T2wm.vol);
@@ -70,26 +70,22 @@ for day = day_list
     DCEs.vol(DCEs.vol(:)> LB) = 1;
     
     % 4) save
-    MRIwrite(T2wm, [outputModPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-Coreg_Anat-masked-iso.nii']);    
-%     MRIwrite(T2w,  [outputModPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-Coreg_Anat-iso.nii']);
-    MRIwrite(DCE,  [outputModPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-CoregDCE-AUC-iso.nii']);
+    MRIwrite(T2wm, [outputModPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-Coreg_Anat-masked-iso.nii.gz']);    
+%     MRIwrite(T2w,  [outputModPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-Coreg_Anat-iso.nii.gz']);
+    MRIwrite(DCE,  [outputModPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-CoregDCE-AUC-iso.nii.gz']);
     
-    MRIwrite(mask, [outputAnatPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-Mask-iso.nii']);
-    MRIwrite(T2ws, [outputTumPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-T2w-iso.nii']);
-    MRIwrite(DCEs, [outputTumPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-DCE-iso.nii']);
+    MRIwrite(mask, [outputAnatPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-Mask-iso.nii.gz']);
+    MRIwrite(T2ws, [outputTumPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-T2w-iso.nii.gz']);
+    MRIwrite(DCEs, [outputTumPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-DCE-iso.nii.gz']);
 end;
 
 %% Anatomies
 if (bAnatomy)
-    day=8;
-%     csf = MRIread([inputAnatPath,'M',num2str(rID),'-J',num2str(day,'%02d'),'-Atlas_CSF-ROI.nii']);
-%     wm  = MRIread([inputAnatPath,'M',num2str(rID),'-J',num2str(day,'%02d'),'-Atlas_WM-ROI.nii']);
-%     gm  = MRIread([inputAnatPath,'M',num2str(rID),'-J',num2str(day,'%02d'),'-Atlas_GM-ROI.nii']);
-%     
-
-    csf = MRIread([inputAnatPath,'M',num2str(rID),'-J',num2str(day,'%02d'),'-VOI-Atlas_CSF.nii']);
-    wm  = MRIread([inputAnatPath,'M',num2str(rID),'-J',num2str(day,'%02d'),'-VOI-Atlas_WM.nii']);
-    gm  = MRIread([inputAnatPath,'M',num2str(rID),'-J',num2str(day,'%02d'),'-VOI-Atlas_GM.nii']);
+    day=9;
+    
+    csf = MRIread([inputAnatPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-VOI-Atlas_CSF.nii']);
+    wm  = MRIread([inputAnatPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-VOI-Atlas_WM.nii']);
+    gm  = MRIread([inputAnatPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-VOI-Atlas_GM.nii']);
     
     csf.vol = resize3d(csf.vol, newRes,interp);
     wm.vol  = resize3d(wm.vol, newRes,interp);
@@ -129,9 +125,9 @@ if (bAnatomy)
         end;
     end;
     
-    MRIwrite(csf, [outputAnatPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-csf-iso.nii']);
-    MRIwrite(wm,  [outputAnatPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-wm-iso.nii']);
-    MRIwrite(gm,  [outputAnatPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-gm-iso.nii']);
+    MRIwrite(csf, [outputAnatPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-csf-iso.nii.gz']);
+    MRIwrite(wm,  [outputAnatPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-wm-iso.nii.gz']);
+    MRIwrite(gm,  [outputAnatPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-gm-iso.nii.gz']);
 end;
 
 

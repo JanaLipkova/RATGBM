@@ -11,3 +11,6 @@ source/makefile/RAT_UQ/
 source/Anatomy/
 source/makefile/brain
 source/Likelihood/makefile/likelihood
+Image_Analyses_data/
+Visualisation/
+
