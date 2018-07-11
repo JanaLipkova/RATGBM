@@ -132,22 +132,28 @@ void Glioma_RAT_preprocessing::_ic(Grid<W,B>& grid, int pID)
                     
                     if( all > 0.1 )
                     {
-                        Pcsf = ( Pcsf > 0.1 ) ? 1. : Pcsf;  // threasholding to ensure hemisphere separations
-                        block(ix,iy,iz).p_csf = Pcsf;
-                        
-                        if(Pcsf  < 1.)
+                     
+                        if(Pcsf > 0.1)
+                        {
+                            block(ix,iy,iz).p_csf = 1.0;
+                            block(ix,iy,iz).p_g   = 0.0;
+                            block(ix,iy,iz).p_w   = 0.0;
+                        }
+                        else
                         {
                             if(PWt > 0.5)
                             {
-                                block(ix,iy,iz).p_w    = 1.;//  / (PWt + PGt);
-                                block(ix,iy,iz).p_g    = 0.;//  / (PWt + PGt);
+                                block(ix,iy,iz).p_w = 1.0;
+                                block(ix,iy,iz).p_g = 0.0;
                             }
-                            else if (PGt > 0.5)
+                            else
                             {
-                                block(ix,iy,iz).p_w    = 0.;
-                                block(ix,iy,iz).p_g    = 1.;
+                                block(ix,iy,iz).p_w = 0.0;
+                                block(ix,iy,iz).p_g = 1.0;
                             }
+
                         }
+  
                     }
                     
                     // fill the holes in the anatomy segmentations for the rats
@@ -337,6 +343,10 @@ void Glioma_RAT_preprocessing:: _readInTumourSegmentation(Grid<W,B>& grid, int p
     double brainHx = 1.0 / ((double)(brainSizeMax)); // should be w.r.t. longest dimension for correct aspect ratio
     double brainHy = 1.0 / ((double)(brainSizeMax)); // should be w.r.t. longest dimension for correct aspect ratio
     double brainHz = 1.0 / ((double)(brainSizeMax)); // should be w.r.t. longest dimension for correct aspect ratio
+   
+    // for threasholding synthethic data
+    Real ucT1 = (pID==1) ? 0.75 : 0.7;
+    Real ucT2 = 0.25;
     
     vector<BlockInfo> vInfo = grid.getBlocksInfo();
     
@@ -370,18 +380,15 @@ void Glioma_RAT_preprocessing:: _readInTumourSegmentation(Grid<W,B>& grid, int p
                         PT1w  =  T1w(mappedBrainX,mappedBrainY,mappedBrainZ);
                     }
                     
-                    if(pID > 0)
+                    if(pID > 3)
                     {
                         block(ix,iy,iz).t1bc = (PT1w > 0.01) ? 1. : 0. ;  // T1w tumour segmentations
                         block(ix,iy,iz).t2bc = (PT2w > 0.01) ? 1. : 0.;   // T2w tumour segmentations
                     }
                     else
                     {
-                        Real ucT1 = 0.7;
-                        Real ucT2 = 0.25;
-                        
-                        block(ix,iy,iz).t1bc = (PT1w >= ucT1) ? 1. : 0. ;  // T1w tumour segmentations
-                        block(ix,iy,iz).t2bc = (PT2w >= ucT2) ? 1. : 0. ;  // T2w tumour segmentations
+                        block(ix,iy,iz).t1bc = (PT1w >= ucT1) ? 1. : 0. ;  // T1w tumour segmentations synthethic cases
+                        block(ix,iy,iz).t2bc = (PT2w >= ucT2) ? 1. : 0. ;  // T2w tumour segmentations synthethic cases
                     }
                     
                 }
