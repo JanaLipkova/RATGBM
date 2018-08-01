@@ -1,0 +1,41 @@
+WARNING: gcc/4.9 cannot be loaded due to a conflict.
+HINT: Might try "module unload gcc" first.
+In the directory: /home/hpc/txh01/di49zin/GliomaAdvance/RATGBM/source/makefile/RAT_UQ/Synthethic/GT
+Running program on  nodes, each with  cores.
+
+MRAG Launched
+
+INITIALIZED THREADS=1 (_MRAG_TBB_NTHREADS_HINT is 6)
+ Precission: sizeof(Real)=4
+INPUT IS rat
+////////////////////////////////////////////////////////////////////////////////
+//////////////////                 RAT GLIOMA UQ                ////////////////
+////////////////////////////////////////////////////////////////////////////////
+INIT! nThreads=6, blockSize=18 Wavelets=ww (blocksPerDimension=8, maxLevel=3)
+Reading anatomy from: /home/hpc/txh01/di49zin/GliomaAdvance/RATGBM/source/Anatomy/F98/M00/M00 
+brainSizeX=144 brainSizeY=144 brainSizeZ=144
+L=16.848
+Dg=3.522924e-06, Dw=7.045848e-05, dt= 0.108371, rho=0.600000 , h=0.006944
+bpd=8, bs=18, hf=0.006944,
+Dumping data at time t=9.103185
+bpd=8, bs=18, hf=0.006944,
+Dumping data at time t=11.053868
+bpd=8, bs=18, hf=0.006944,
+Dumping data at time t=14.088263
+bpd=8, bs=18, hf=0.006944,
+Dumping data at time t=16.038945
+[                AutoCompr::FWT]: 	31-31%	9.059e-02 (9.059e-02) s	19.205 (19.205) s	(212 samples)
+[           AutoCompr::compress]: 	18-18%	5.095e-02 (5.095e-02) s	10.802 (10.802) s	(212 samples)
+[                  AutoRef::FWT]: 	05-05%	1.895e-02 (1.894e-02) s	2.785 (2.785) s	(147 samples)
+[               AutoRef::refine]: 	32-32%	3.210e-01 (3.210e-01) s	19.903 (19.903) s	(62 samples)
+[                    boundaries]: 	14-14%	3.224e-02 (3.224e-02) s	8.833 (8.833) s	(274 samples)
+[Total time]: 	61.527941
+**** Dumping done
+
+
+ Run Finished 
+
+we spent: 103.03 
+------Adios muchachos------
+
+MRAG Terminated
