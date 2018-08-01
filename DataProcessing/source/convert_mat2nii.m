@@ -35,8 +35,8 @@ data = out.vol;
 % - else select correct data (no header), resize to 3D and save to nii
 % - for T2 images, check if values above 1e+20 -> apply cliping
 
-for i = 698:(size(FolderContent)-1)
-    i;
+for i = 3:(size(FolderContent))
+    
     
     % read file name from folder, create output file with nii extension, load data
     inputName   = FolderContent(i).name
@@ -45,6 +45,8 @@ for i = 698:(size(FolderContent)-1)
     
     data        = load([inputDataPath,inputName]);
     bCollect = 0;
+    
+    inputName
     
     if( baseName(end-2:end)=='ROI')
         bCollect=2;
@@ -57,7 +59,7 @@ for i = 698:(size(FolderContent)-1)
             end;
         end;
     end;
-            
+    
     if(bCollect==1)
         dataOut = data.uvascroi().value;
         
@@ -94,5 +96,7 @@ for i = 698:(size(FolderContent)-1)
         
     end;
     
-     clear data;
+    clear data;
+    
+    
 end

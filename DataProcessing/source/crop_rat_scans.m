@@ -15,14 +15,17 @@ addpath('../lib/vi');
 addpath('../lib/Matlab2C/matrixMatlab2Cpp/matlab/')
 addpath('../lib/')
 
-% for rID = [42 38 36 34 30 29]
-%     rID
-    day_list = [9,11,14,16];
+
     bAnatomy = 1;
-    bRATS=0;
-    bATLAS=1;
-    
-    
+    bRATS=1;
+    bATLAS=0;
+
+ for rID = 38 %[30,38]%[42 38 36 34 30]% 29]
+     rID
+  
+    day_list = [9,11,14,16];
+
+       
     if(bRATS)
         for day = day_list
             day
@@ -34,13 +37,13 @@ addpath('../lib/')
             outputPath    = ['../../RAT_DATA_F98/M',num2str(rID),'/isotropic_cropped/'];
             
             % 1) read in data
-            T2wm = MRIread([inputModPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-Coreg_Anat-masked-iso.nii'] );
-            DCE  = MRIread([inputModPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-CoregDCE-AUC-iso.nii'] );
+            T2wm = MRIread([inputModPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-Coreg_Anat-masked-iso.nii.gz'] );
+            DCE  = MRIread([inputModPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-CoregDCE-AUC-iso.nii.gz'] );
             
-            mask  = MRIread([inputAnatPath,'M',num2str(rID),'J',num2str(9,'%02d'),'-Mask-iso.nii'] ); % use the same mask for all of them
+            mask  = MRIread([inputAnatPath,'M',num2str(rID),'J',num2str(9,'%02d'),'-Mask-iso.nii.gz'] ); % use the same mask for all of them
             %         mask  = MRIread([inputAnatPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-Mask-iso.nii'] );
-            T2ws  = MRIread([inputTumPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-T2w-iso.nii'] );
-            DCEs  = MRIread([inputTumPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-DCE-iso.nii'] );
+            T2ws  = MRIread([inputTumPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-T2w-iso.nii.gz'] );
+            DCEs  = MRIread([inputTumPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-DCE-iso.nii.gz'] );
             
             DCE.vol = DCE.vol.*mask.vol;
             
@@ -76,18 +79,18 @@ addpath('../lib/')
             DCEs.vol = padarray(DCEs.vol,  [px,py,pz],0,'post');
             
             % 5) save cropped data to nii
-            MRIwrite(T2wm, [outputPath,'nifty/modalities/M',num2str(rID),'J',num2str(day,'%02d'),'-Coreg_Anat-masked-iso-crop.nii']);
-            MRIwrite(DCE,  [outputPath,'nifty/modalities/M',num2str(rID),'J',num2str(day,'%02d'),'-CoregDCE-AUC-iso-crop.nii']);
-            MRIwrite(mask,  [outputPath,'nifty/anatomy/M',num2str(rID),'J',num2str(day,'%02d'),'-Mask-iso-crop.nii']);
-            MRIwrite(T2ws,  [outputPath,'nifty/tumour/M',num2str(rID),'J',num2str(day,'%02d'),'-T2w-iso-crop.nii']);
-            MRIwrite(DCEs,  [outputPath,'nifty/tumour/M',num2str(rID),'J',num2str(day,'%02d'),'-DCE-iso-crop.nii']);
+            MRIwrite(T2wm, [outputPath,'nifty/modalities/M',num2str(rID),'J',num2str(day,'%02d'),'-Coreg_Anat-masked-iso-crop.nii.gz']);
+            MRIwrite(DCE,  [outputPath,'nifty/modalities/M',num2str(rID),'J',num2str(day,'%02d'),'-CoregDCE-AUC-iso-crop.nii.gz']);
+            MRIwrite(mask,  [outputPath,'nifty/anatomy/M',num2str(rID),'J',num2str(day,'%02d'),'-Mask-iso-crop.nii.gz']);
+            MRIwrite(T2ws,  [outputPath,'nifty/tumour/M',num2str(rID),'J',num2str(day,'%02d'),'-T2w-iso-crop.nii.gz']);
+            MRIwrite(DCEs,  [outputPath,'nifty/tumour/M',num2str(rID),'J',num2str(day,'%02d'),'-DCE-iso-crop.nii.gz']);
             
             
             % 6) save cropped data into binary
             typeId = 1; % 0 double, 1 float
             writeMatrix(T2wm.vol,  [outputPath,'binary/modalities/M',num2str(rID),'J',num2str(day,'%02d'),'-Coreg_Anat-masked-iso-crop.dat'],typeId)
             writeMatrix(DCE.vol,   [outputPath,'binary/modalities/M',num2str(rID),'J',num2str(day,'%02d'),'-CoregDCE-AUC-iso-crop.dat'],typeId);
-            writeMatrix(mask.vol,  [outputPath,'binary/anatomy/M',num2str(rID),'J',num2str(day,'%02d'),'-Mask-iso-crop.dat'],typeId);
+            writeMatrix(mask.vol,  [outputPath,'binary/anatomy/M',num2str(rID),'_mask.dat'],typeId);
             writeMatrix(T2ws.vol,  [outputPath,'binary/tumour/M',num2str(rID),'J',num2str(day,'%02d'),'-T2w-iso-crop.dat'],typeId);
             writeMatrix(DCEs.vol,  [outputPath,'binary/tumour/M',num2str(rID),'J',num2str(day,'%02d'),'-DCE-iso-crop.dat'],typeId);
             
@@ -96,10 +99,10 @@ addpath('../lib/')
         
         % Apply the same for the anatomy
         if(bAnatomy)
-            day=8;
-            csf = MRIread([inputAnatPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-csf-iso.nii'] );
-            wm  = MRIread([inputAnatPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-wm-iso.nii'] );
-            gm  = MRIread([inputAnatPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-gm-iso.nii'] );
+            day=9;
+            csf = MRIread([inputAnatPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-csf-iso.nii.gz'] );
+            wm  = MRIread([inputAnatPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-wm-iso.nii.gz'] );
+            gm  = MRIread([inputAnatPath,'M',num2str(rID),'J',num2str(day,'%02d'),'-gm-iso.nii.gz'] );
             
             csf.vol = cropData(mask_tmp, csf.vol);
             wm.vol  = cropData(mask_tmp, wm.vol);
@@ -119,18 +122,21 @@ addpath('../lib/')
             wm.vol  = padarray(wm.vol, [px py pz],0,'post');
             gm.vol  = padarray(gm.vol, [px py pz],0,'post');
             
-            MRIwrite(csf, [outputPath,'nifty/anatomy/M',num2str(rID),'J',num2str(day,'%02d'),'-csf-iso-crop.nii']);
-            MRIwrite(wm,  [outputPath,'nifty/anatomy/M',num2str(rID),'J',num2str(day,'%02d'),'-wm-iso-crop.nii']);
-            MRIwrite(gm,  [outputPath,'nifty/anatomy/M',num2str(rID),'J',num2str(day,'%02d'),'-gm-iso-crop.nii']);
+            MRIwrite(csf, [outputPath,'nifty/anatomy/M',num2str(rID),'J',num2str(day,'%02d'),'-csf-iso-crop.nii.gz']);
+            MRIwrite(wm,  [outputPath,'nifty/anatomy/M',num2str(rID),'J',num2str(day,'%02d'),'-wm-iso-crop.nii.gz']);
+            MRIwrite(gm,  [outputPath,'nifty/anatomy/M',num2str(rID),'J',num2str(day,'%02d'),'-gm-iso-crop.nii.gz']);
             
             typeId=1;
-            writeMatrix(csf.vol,  [outputPath,'binary/anatomy/M',num2str(rID),'J',num2str(day,'%02d'),'-csf-iso-crop.dat'],typeId)
-            writeMatrix(wm.vol,  [outputPath,'binary/anatomy/M',num2str(rID),'J',num2str(day,'%02d'),'-wm-iso-crop.dat'],typeId)
-            writeMatrix(gm.vol,  [outputPath,'binary/anatomy/M',num2str(rID),'J',num2str(day,'%02d'),'-gm-iso-crop.dat'],typeId)
+            writeMatrix(csf.vol,  [outputPath,'binary/anatomy/M',num2str(rID),'_csf.dat'],typeId)
+            writeMatrix(wm.vol,  [outputPath,'binary/anatomy/M',num2str(rID),'_wm.dat'],typeId)
+            writeMatrix(gm.vol,  [outputPath,'binary/anatomy/M',num2str(rID),'_gm.dat'],typeId)
+            %             writeMatrix(csf.vol,  [outputPath,'binary/anatomy/M',num2str(rID),'J',num2str(day,'%02d'),'-csf-iso-crop.dat'],typeId)
+            %             writeMatrix(wm.vol,  [outputPath,'binary/anatomy/M',num2str(rID),'J',num2str(day,'%02d'),'-wm-iso-crop.dat'],typeId)
+%             writeMatrix(gm.vol,  [outputPath,'binary/anatomy/M',num2str(rID),'J',num2str(day,'%02d'),'-gm-iso-crop.dat'],typeId)
         end;
         
     end;
-% end;
+ end;
 
 
 if(bATLAS)
